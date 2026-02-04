@@ -1,134 +1,116 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// --- PLAK HIERONDER JOUW FIREBASE CONFIG CODE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
+  authDomain: "sem-flow.firebaseapp.com",
+  projectId: "sem-flow",
+  storageBucket: "sem-flow.firebasestorage.app",
+  messagingSenderId: "275773373096",
+  appId: "1:275773373096:web:f7d44209c6159fcbdfa09d",
+  measurementId: "G-CF0MTZ10YF"
+};
+// -----------------------------------------------
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 let mode = 'tasks';
 let currentSort = 'new';
+let cloudData = [];
 
 const patterns = {
     tasks: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTUgMTBsNSA1IDEwLTEwIiBzdHJva2U9IiMzMDZBNjAiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==`,
     notes: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTEwIDMwTDMwIDEwIiBzdHJva2U9IiMzMDZBNjAiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==`
 };
 
-window.onload = () => render();
-
-function setTab(m) {
+window.setTab = (m) => {
     mode = m;
     document.getElementById('taskBtn').classList.toggle('active', mode === 'tasks');
     document.getElementById('noteBtn').classList.toggle('active', mode === 'notes');
     document.getElementById('prioSelect').style.display = mode === 'tasks' ? 'block' : 'none';
     document.getElementById('catSelect').style.display = mode === 'tasks' ? 'block' : 'none';
     document.getElementById('filterBar').style.display = mode === 'tasks' ? 'flex' : 'none';
-    document.getElementById('mainInput').placeholder = mode === 'tasks' ? "Nieuwe taak..." : "Nieuw notitieboekje...";
-    render();
-}
+    startSync();
+};
 
-function setSort(s) {
+window.setSort = (s, btn) => {
     currentSort = s;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(s));
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.render();
+};
+
+function startSync() {
+    const q = query(collection(db, mode), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        window.render();
     });
-    render();
 }
 
-function render() {
+window.render = () => {
     document.getElementById('pattern-layer').style.backgroundImage = `url(${patterns[mode]})`;
     const container = document.getElementById('list-container');
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     container.innerHTML = '';
     
-    let rawData = JSON.parse(localStorage.getItem('semthing_db_' + mode)) || [];
-    let dataToRender = [...rawData];
+    let displayData = [...cloudData];
 
-    // 1. Zoekfilter
     if (searchTerm) {
-        dataToRender = dataToRender.filter(item => {
-            const text = mode === 'tasks' ? item.text : item.title;
-            return text.toLowerCase().includes(searchTerm);
-        });
+        displayData = displayData.filter(item => (mode === 'tasks' ? item.text : item.title).toLowerCase().includes(searchTerm));
     }
 
-    // 2. Sorteren
     if (mode === 'tasks') {
-        if (currentSort === 'alpha') dataToRender.sort((a, b) => a.text.localeCompare(b.text));
-        else if (currentSort === 'prio') dataToRender.sort((a, b) => a.prio - b.prio);
-        else dataToRender.reverse(); 
-    } else {
-        dataToRender.reverse();
+        if (currentSort === 'alpha') displayData.sort((a, b) => (a.text || "").localeCompare(b.text || ""));
+        else if (currentSort === 'prio') displayData.sort((a, b) => a.prio - b.prio);
     }
 
-    dataToRender.forEach((item) => {
-        // Vind de index in de originele array voor opslag
-        const realIndex = rawData.findIndex(d => 
-            mode === 'tasks' ? (d.text === item.text && d.prio === item.prio) : (d.title === item.title)
-        );
-
+    displayData.forEach((item) => {
         const div = document.createElement('div');
         div.className = `menu-item ${mode === 'tasks' ? 'prio-' + item.prio : ''}`;
         
-        if (mode === 'tasks') {
-            div.innerHTML = `
-                <div class="menu-header">
-                    <span class="editable-title" contenteditable="true" onblur="saveInlineEdit(${realIndex}, this.innerText)">${item.text}</span>
-                    <small>${item.cat} | P${item.prio}</small>
-                </div>
-                <div class="menu-content"><div class="menu-inner">
-                    <button class="btn-del" onclick="removeItem(${realIndex})">VERWIJDER TAAK</button>
-                </div></div>`;
-        } else {
-            div.innerHTML = `
-                <div class="menu-header">
-                    <span class="editable-title" contenteditable="true" onblur="saveInlineEdit(${realIndex}, this.innerText)">${item.title}</span>
-                </div>
-                <div class="menu-content"><div class="menu-inner">
-                    <textarea class="note-area" oninput="updateNote(${realIndex}, this.value)" placeholder="Begin met schrijven...">${item.content || ''}</textarea>
-                    <button class="btn-del" onclick="removeItem(${realIndex})">VERWIJDER NOTITIE</button>
-                </div></div>`;
-        }
-
-        div.querySelector('.menu-header').onclick = function(e) {
+        div.innerHTML = mode === 'tasks' ? 
+            `<div class="menu-header"><span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.text}</span><small>${item.cat} | P${item.prio}</small></div><div class="menu-content"><div class="menu-inner"><button class="btn-del" onclick="window.removeItem('${item.id}')">VERWIJDER</button></div></div>` :
+            `<div class="menu-header"><span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.title}</span></div><div class="menu-content"><div class="menu-inner"><textarea class="note-area" oninput="window.updateNote('${item.id}', this.value)">${item.content || ''}</textarea><button class="btn-del" onclick="window.removeItem('${item.id}')">VERWIJDER</button></div></div>`;
+        
+        div.querySelector('.menu-header').onclick = (e) => {
             if(e.target.classList.contains('editable-title')) return;
-            const content = this.nextElementSibling;
+            const content = div.querySelector('.menu-content');
             const isOpen = content.style.maxHeight;
             document.querySelectorAll('.menu-content').forEach(c => c.style.maxHeight = null);
             content.style.maxHeight = isOpen ? null : content.scrollHeight + "px";
         };
         container.appendChild(div);
     });
-}
-
-document.getElementById('addBtn').onclick = () => {
-    const input = document.getElementById('mainInput');
-    if (!input.value.trim()) return;
-    const data = JSON.parse(localStorage.getItem('semthing_db_' + mode)) || [];
-    
-    if (mode === 'tasks') {
-        data.push({ 
-            text: input.value, 
-            prio: document.getElementById('prioSelect').value,
-            cat: document.getElementById('catSelect').value 
-        });
-    } else {
-        data.push({ title: input.value, content: "" });
-    }
-    
-    localStorage.setItem('semthing_db_' + mode, JSON.stringify(data));
-    input.value = '';
-    render();
 };
 
-function saveInlineEdit(index, newValue) {
-    let data = JSON.parse(localStorage.getItem('semthing_db_' + mode));
-    if (mode === 'tasks') data[index].text = newValue;
-    else data[index].title = newValue;
-    localStorage.setItem('semthing_db_' + mode, JSON.stringify(data));
-}
+window.addItem = async () => {
+    const input = document.getElementById('mainInput');
+    if (!input.value.trim()) return;
+    
+    const newItem = mode === 'tasks' ? 
+        { text: input.value, prio: document.getElementById('prioSelect').value, cat: document.getElementById('catSelect').value, timestamp: Date.now() } :
+        { title: input.value, content: "", timestamp: Date.now() };
 
-function updateNote(index, val) {
-    let data = JSON.parse(localStorage.getItem('semthing_db_notes'));
-    data[index].content = val;
-    localStorage.setItem('semthing_db_notes', JSON.stringify(data));
-}
+    await addDoc(collection(db, mode), newItem);
+    input.value = '';
+};
 
-function removeItem(index) {
-    let data = JSON.parse(localStorage.getItem('semthing_db_' + mode));
-    data.splice(index, 1);
-    localStorage.setItem('semthing_db_' + mode, JSON.stringify(data));
-    render();
-}
+window.saveEdit = async (id, val) => {
+    const docRef = doc(db, mode, id);
+    await updateDoc(docRef, mode === 'tasks' ? { text: val } : { title: val });
+};
+
+window.updateNote = async (id, val) => {
+    const docRef = doc(db, 'notes', id);
+    await updateDoc(docRef, { content: val });
+};
+
+window.removeItem = async (id) => {
+    await deleteDoc(doc(db, mode, id));
+};
+
+startSync();

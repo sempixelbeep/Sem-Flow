@@ -3,71 +3,59 @@
     --btn-green: #4CAF50; --bg-accent: #306A60;
     --bg-card: #C1D2CF; --bg-content: #D6E1DF; --border-color: #98B5B0;
     --anim-curve: cubic-bezier(0.4, 0, 0.2, 1);
-    --hover-speed: 0.2s;
-    --entry-speed: 0.4s;
 }
 
 body { 
     font-family: 'Segoe UI', system-ui, sans-serif; 
     background: linear-gradient(180deg, #306A60 0%, #1a3a34 100%); 
-    min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center;
-    background-attachment: fixed; overflow-x: hidden; color: #1a1a1a;
+    min-height: 100vh; margin: 0; padding: 15px; display: flex; justify-content: center;
+    background-attachment: fixed; color: #1a1a1a; overflow-x: hidden;
 }
 
 #pattern-layer {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; opacity: 0.08; z-index: 1; 
-    transition: background 0.6s var(--anim-curve);
+    pointer-events: none; opacity: 0.08; z-index: 1; transition: 0.6s var(--anim-curve);
 }
 
 .app-wrapper { width: 100%; max-width: 600px; position: relative; z-index: 10; }
 
 .tab-switcher { 
     display: flex; background: var(--bg-card); border-radius: 12px; 
-    margin-bottom: 15px; border: 1px solid var(--border-color); 
-    overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+    margin-bottom: 15px; border: 1px solid var(--border-color); overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.tab-btn { 
-    flex: 1; padding: 15px; border: none; background: transparent; 
-    cursor: pointer; font-weight: bold; transition: all var(--hover-speed) var(--anim-curve); 
-}
+.tab-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: 0.3s; }
 .tab-btn.active { background: var(--border-color); color: white; }
-.tab-btn:hover:not(.active) { background: rgba(255,255,255,0.15); }
 
 .input-box { 
     background: white; padding: 15px; border-radius: 12px; 
     display: flex; gap: 8px; margin-bottom: 10px; align-items: center; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex-wrap: wrap;
-    transition: transform var(--hover-speed);
 }
-.input-box:focus-within { transform: translateY(-2px); }
 
-#searchInput {
-    width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border-color);
-    margin-bottom: 15px; outline: none; transition: 0.3s;
+#mainInput, #searchInput { 
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); 
+    outline: none; box-sizing: border-box; font-size: 16px;
 }
-#searchInput:focus { background: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+#searchInput { border-radius: 25px; margin-bottom: 15px; }
 
-.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; }
-.filter-btn { 
-    background: rgba(255,255,255,0.15); border: 1px solid var(--border-color); 
-    color: white; padding: 6px 18px; border-radius: 20px; cursor: pointer; 
-    font-size: 13px; transition: all 0.3s var(--anim-curve); 
-}
-.filter-btn.active { background: var(--bg-accent); border-color: white; transform: scale(1.05); }
+.select-styled { padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-content); font-weight: bold; }
 
 #addBtn { 
     background: var(--btn-green); color: white; border: none; border-radius: 50%; 
-    width: 45px; height: 45px; font-size: 24px; cursor: pointer; 
-    transition: all 0.4s var(--anim-curve); 
+    width: 45px; height: 45px; font-size: 24px; cursor: pointer; transition: 0.4s var(--anim-curve);
 }
-#addBtn:hover { transform: scale(1.15) rotate(90deg); }
+#addBtn:hover { transform: scale(1.1) rotate(90deg); }
+
+.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; }
+.filter-btn { background: rgba(255,255,255,0.15); border: 1px solid var(--border-color); color: white; padding: 6px 18px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: 0.3s; }
+.filter-btn.active { background: var(--bg-accent); border-color: white; }
 
 .menu-item { 
     margin-bottom: 12px; border: 1px solid var(--border-color); 
-    border-radius: 12px; background-color: var(--bg-card); 
-    overflow: hidden; animation: slideIn var(--entry-speed) var(--anim-curve) forwards;
+    border-radius: 12px; background-color: var(--bg-card); overflow: hidden;
+    animation: slideIn 0.4s var(--anim-curve) forwards;
 }
 @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -75,34 +63,15 @@ body {
 .prio-2 { border-left: 8px solid var(--prio-2); }
 .prio-3 { border-left: 8px solid var(--prio-3); }
 
-.menu-header { 
-    padding: 18px 22px; font-weight: 700; cursor: pointer; 
-    display: flex; justify-content: space-between; align-items: center;
-}
+.menu-header { padding: 18px 22px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.editable-title { flex: 1; outline: none; padding: 4px; border-radius: 4px; }
+.editable-title:focus { background: white; }
 
-.editable-title {
-    flex: 1; padding: 4px 8px; border-radius: 6px; outline: none;
-    transition: background 0.3s;
-}
-.editable-title:focus { background: white; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+.menu-content { max-height: 0; overflow: hidden; background-color: var(--bg-content); transition: max-height 0.4s var(--anim-curve); }
+.menu-inner { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
 
-.menu-content { 
-    max-height: 0; overflow: hidden; background-color: var(--bg-content); 
-    transition: max-height 0.45s var(--anim-curve);
-}
+.note-area { width: 100%; min-height: 200px; border-radius: 8px; padding: 12px; border: 1px solid #ccc; outline: none; resize: vertical; box-sizing: border-box; font-family: inherit; }
 
-.menu-inner { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-
-.note-area { 
-    width: 100%; min-height: 220px; border-radius: 10px; padding: 15px; 
-    border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.85); 
-    font-family: inherit; resize: vertical; outline: none; transition: 0.3s;
-}
-.note-area:focus { background: white; }
-
-.btn-del { 
-    background: #f44336; color: white; border: none; padding: 14px; 
-    border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s;
-}
+.btn-del { background: #f44336; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
 .version-tag { position: fixed; bottom: 10px; right: 15px; font-size: 11px; color: white; opacity: 0.5; font-weight: bold; }
