@@ -1,77 +1,22 @@
-:root {
-    --prio-1: #ff6b6b; --prio-2: #f2b01e; --prio-3: #5c6ac4;
-    --btn-green: #4CAF50; --bg-accent: #306A60;
-    --bg-card: #C1D2CF; --bg-content: #D6E1DF; --border-color: #98B5B0;
-    --anim-curve: cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Progress Bar */
+.progress-container { width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 20px; overflow: hidden; height: 12px; border: 1px solid var(--border-color); }
+#progressBar { height: 100%; background: var(--btn-green); width: 0%; transition: width 0.5s ease; font-size: 10px; color: white; text-align: center; line-height: 12px; font-weight: bold; }
 
-body { 
-    font-family: 'Segoe UI', system-ui, sans-serif; 
-    background: linear-gradient(180deg, #306A60 0%, #1a3a34 100%); 
-    min-height: 100vh; margin: 0; padding: 15px; display: flex; justify-content: center;
-    background-attachment: fixed; color: #1a1a1a; overflow-x: hidden;
-}
+/* Afgevinkte styling */
+.menu-item.done { opacity: 0.4; filter: grayscale(1); }
+.menu-item.done .editable-title { text-decoration: line-through; }
 
-#pattern-layer {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; opacity: 0.08; z-index: 1; transition: 0.6s var(--anim-curve);
-}
+/* Categorie Tag */
+.cat-tag { background: var(--bg-accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 10px; }
 
-.app-wrapper { width: 100%; max-width: 600px; position: relative; z-index: 10; }
+/* Animaties */
+.menu-item { animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transition: transform 0.2s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-.tab-switcher { 
-    display: flex; background: var(--bg-card); border-radius: 12px; 
-    margin-bottom: 15px; border: 1px solid var(--border-color); overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
+.menu-item:active { transform: scale(0.98); }
 
-.tab-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: 0.3s; }
-.tab-btn.active { background: var(--border-color); color: white; }
+/* Empty state */
+.empty-state { text-align: center; padding: 50px; color: white; opacity: 0.6; font-style: italic; }
 
-.input-box { 
-    background: white; padding: 15px; border-radius: 12px; 
-    display: flex; gap: 8px; margin-bottom: 10px; align-items: center; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex-wrap: wrap;
-}
-
-#mainInput, #searchInput { 
-    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); 
-    outline: none; box-sizing: border-box; font-size: 16px;
-}
-#searchInput { border-radius: 25px; margin-bottom: 15px; }
-
-.select-styled { padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-content); font-weight: bold; }
-
-#addBtn { 
-    background: var(--btn-green); color: white; border: none; border-radius: 50%; 
-    width: 45px; height: 45px; font-size: 24px; cursor: pointer; transition: 0.4s var(--anim-curve);
-}
-#addBtn:hover { transform: scale(1.1) rotate(90deg); }
-
-.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; }
-.filter-btn { background: rgba(255,255,255,0.15); border: 1px solid var(--border-color); color: white; padding: 6px 18px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: 0.3s; }
-.filter-btn.active { background: var(--bg-accent); border-color: white; }
-
-.menu-item { 
-    margin-bottom: 12px; border: 1px solid var(--border-color); 
-    border-radius: 12px; background-color: var(--bg-card); overflow: hidden;
-    animation: slideIn 0.4s var(--anim-curve) forwards;
-}
-@keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-.prio-1 { border-left: 8px solid var(--prio-1); }
-.prio-2 { border-left: 8px solid var(--prio-2); }
-.prio-3 { border-left: 8px solid var(--prio-3); }
-
-.menu-header { padding: 18px 22px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-.editable-title { flex: 1; outline: none; padding: 4px; border-radius: 4px; }
-.editable-title:focus { background: white; }
-
-.menu-content { max-height: 0; overflow: hidden; background-color: var(--bg-content); transition: max-height 0.4s var(--anim-curve); }
-.menu-inner { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-
-.note-area { width: 100%; min-height: 200px; border-radius: 8px; padding: 12px; border: 1px solid #ccc; outline: none; resize: vertical; box-sizing: border-box; font-family: inherit; }
-
-.btn-del { background: #f44336; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-.version-tag { position: fixed; bottom: 10px; right: 15px; font-size: 11px; color: white; opacity: 0.5; font-weight: bold; }
+/* Checkbox */
+input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--btn-green); margin-right: 15px; }
