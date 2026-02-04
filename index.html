@@ -3,44 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sem Flow - Cloud Sync</title>
+    <title>Sem Flow v0.2.1</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="pattern-layer"></div>
-    <div class="app-wrapper">
+    <div id="fireworks-container"></div>
+    
+    <div class="top-bar">
+        <button id="themeBtn" onclick="window.toggleTheme()">🌓</button>
+        <div class="flow-points">💎 <span id="pointsDisplay">0</span></div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <h1>Sem Flow</h1>
+            <div class="progress-container"><div id="progressBar"></div></div>
+        </header>
+
+        <div class="input-section">
+            <input type="text" id="mainInput" placeholder="Nieuwe taak..." autofocus>
+            <div class="options">
+                <select id="prioSelect">
+                    <option value="1">🔥 Prio 1</option>
+                    <option value="2">🔸 Prio 2</option>
+                    <option value="3" selected>🌿 Prio 3</option>
+                </select>
+                <select id="catSelect">
+                    <option value="Algemeen">Algemeen</option>
+                    <option value="Werk">Werk</option>
+                    <option value="Privé">Privé</option>
+                </select>
+                <button onclick="window.addItem()" id="addBtn">+</button>
+            </div>
+        </div>
+
         <div class="tab-switcher">
-            <button id="taskBtn" class="tab-btn active" onclick="window.setTab('tasks')">📋 Taken</button>
-            <button id="noteBtn" class="tab-btn" onclick="window.setTab('notes')">📖 Notities</button>
-        </div>
-
-        <div class="input-box">
-            <input type="text" id="mainInput" placeholder="Nieuwe taak...">
-            <select id="catSelect" class="select-styled">
-                <option>Algemeen</option>
-                <option>Werk</option>
-                <option>Mee bezig</option>
-            </select>
-            <select id="prioSelect" class="select-styled">
-                <option value="1">P1</option>
-                <option value="2">P2</option>
-                <option value="3" selected>P3</option>
-            </select>
-            <button id="addBtn" onclick="window.addItem()">+</button>
-        </div>
-
-        <input type="text" id="searchInput" placeholder="Zoeken in Sem Flow..." oninput="window.render()">
-
-        <div id="filterBar" class="filter-bar">
-            <button class="filter-btn active" onclick="window.setSort('new', this)">Nieuwst</button>
-            <button class="filter-btn" onclick="window.setSort('alpha', this)">A-Z</button>
-            <button class="filter-btn" onclick="window.setSort('prio', this)">Prio</button>
+            <button id="taskBtn" class="tab-btn active" onclick="window.setTab('tasks')">Taken</button>
+            <button id="noteBtn" class="tab-btn" onclick="window.setTab('notes')">Notities</button>
         </div>
 
         <div id="list-container"></div>
-        <div class="version-tag">Sem Flow Beta v. 0.1.3</div>
     </div>
-    <div class="progress-container"><div id="progressBar"></div></div>
+
+    <div id="toast" class="toast hidden">
+        <span>Taak voltooid! (+<span id="toastPoints">0</span>)</span>
+        <button onclick="window.undoComplete()">HERSTEL</button>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>
