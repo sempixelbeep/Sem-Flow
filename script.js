@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- PLAK HIERONDER JOUW FIREBASE CONFIG CODE ---
 const firebaseConfig = {
   apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
   authDomain: "sem-flow.firebaseapp.com",
@@ -12,35 +11,25 @@ const firebaseConfig = {
   appId: "1:275773373096:web:f7d44209c6159fcbdfa09d",
   measurementId: "G-CF0MTZ10YF"
 };
-// -----------------------------------------------
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let mode = 'tasks';
-let currentSort = 'new';
 let cloudData = [];
 
-const patterns = {
-    tasks: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTUgMTBsNSA1IDEwLTEwIiBzdHJva2U9IiMzMDZBNjAiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==`,
-    notes: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTEwIDMwTDMwIDEwIiBzdHJva2U9IiMzMDZBNjAiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==`
-};
+// Functie voor Enter-toets
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') window.addItem();
+});
 
 window.setTab = (m) => {
     mode = m;
-    document.getElementById('taskBtn').classList.toggle('active', mode === 'tasks');
-    document.getElementById('noteBtn').classList.toggle('active', mode === 'notes');
+    document.getElementById('taskBtn').className = `tab-btn ${mode === 'tasks' ? 'active' : ''}`;
+    document.getElementById('noteBtn').className = `tab-btn ${mode === 'notes' ? 'active' : ''}`;
     document.getElementById('prioSelect').style.display = mode === 'tasks' ? 'block' : 'none';
     document.getElementById('catSelect').style.display = mode === 'tasks' ? 'block' : 'none';
-    document.getElementById('filterBar').style.display = mode === 'tasks' ? 'flex' : 'none';
     startSync();
-};
-
-window.setSort = (s, btn) => {
-    currentSort = s;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    window.render();
 };
 
 function startSync() {
@@ -48,40 +37,48 @@ function startSync() {
     onSnapshot(q, (snapshot) => {
         cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         window.render();
+        if(mode === 'tasks') updateProgress();
     });
 }
 
+function updateProgress() {
+    const total = cloudData.length;
+    const done = cloudData.filter(t => t.completed).length;
+    const perc = total === 0 ? 0 : Math.round((done / total) * 100);
+    const bar = document.getElementById('progressBar');
+    if(bar) {
+        bar.style.width = perc + "%";
+        bar.innerText = perc > 10 ? perc + "%" : "";
+    }
+}
+
 window.render = () => {
-    document.getElementById('pattern-layer').style.backgroundImage = `url(${patterns[mode]})`;
     const container = document.getElementById('list-container');
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     container.innerHTML = '';
     
-    let displayData = [...cloudData];
-
-    if (searchTerm) {
-        displayData = displayData.filter(item => (mode === 'tasks' ? item.text : item.title).toLowerCase().includes(searchTerm));
+    if (cloudData.length === 0) {
+        container.innerHTML = `<div class="empty-state">De flow is leeg... begin met typen!</div>`;
+        return;
     }
 
-    if (mode === 'tasks') {
-        if (currentSort === 'alpha') displayData.sort((a, b) => (a.text || "").localeCompare(b.text || ""));
-        else if (currentSort === 'prio') displayData.sort((a, b) => a.prio - b.prio);
-    }
-
-    displayData.forEach((item) => {
+    cloudData.forEach((item) => {
         const div = document.createElement('div');
-        div.className = `menu-item ${mode === 'tasks' ? 'prio-' + item.prio : ''}`;
+        div.className = `menu-item ${mode === 'tasks' ? 'prio-' + item.prio : ''} ${item.completed ? 'done' : ''}`;
         
         div.innerHTML = mode === 'tasks' ? 
-            `<div class="menu-header"><span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.text}</span><small>${item.cat} | P${item.prio}</small></div><div class="menu-content"><div class="menu-inner"><button class="btn-del" onclick="window.removeItem('${item.id}')">VERWIJDER</button></div></div>` :
-            `<div class="menu-header"><span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.title}</span></div><div class="menu-content"><div class="menu-inner"><textarea class="note-area" oninput="window.updateNote('${item.id}', this.value)">${item.content || ''}</textarea><button class="btn-del" onclick="window.removeItem('${item.id}')">VERWIJDER</button></div></div>`;
+            `<div class="menu-header">
+                <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="window.toggleComplete('${item.id}', ${item.completed})">
+                <span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.text}</span>
+                <small class="cat-tag">${item.cat}</small>
+            </div>
+            <div class="menu-content"><div class="menu-inner"><button class="btn-del" onclick="window.removeItem('${item.id}')">Verwijderen</button></div></div>` :
+            `<div class="menu-header"><span class="editable-title" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.title}</span></div>
+            <div class="menu-content"><div class="menu-inner"><textarea class="note-area" oninput="window.updateNote('${item.id}', this.value)">${item.content || ''}</textarea><button class="btn-del" onclick="window.removeItem('${item.id}')">Verwijderen</button></div></div>`;
         
         div.querySelector('.menu-header').onclick = (e) => {
-            if(e.target.classList.contains('editable-title')) return;
+            if(e.target.classList.contains('editable-title') || e.target.type === 'checkbox') return;
             const content = div.querySelector('.menu-content');
-            const isOpen = content.style.maxHeight;
-            document.querySelectorAll('.menu-content').forEach(c => c.style.maxHeight = null);
-            content.style.maxHeight = isOpen ? null : content.scrollHeight + "px";
+            content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + "px";
         };
         container.appendChild(div);
     });
@@ -92,25 +89,30 @@ window.addItem = async () => {
     if (!input.value.trim()) return;
     
     const newItem = mode === 'tasks' ? 
-        { text: input.value, prio: document.getElementById('prioSelect').value, cat: document.getElementById('catSelect').value, timestamp: Date.now() } :
+        { text: input.value, prio: document.getElementById('prioSelect').value, cat: document.getElementById('catSelect').value, completed: false, timestamp: Date.now() } :
         { title: input.value, content: "", timestamp: Date.now() };
 
     await addDoc(collection(db, mode), newItem);
     input.value = '';
+    input.focus();
 };
 
-window.saveEdit = async (id, val) => {
-    const docRef = doc(db, mode, id);
-    await updateDoc(docRef, mode === 'tasks' ? { text: val } : { title: val });
-};
-
-window.updateNote = async (id, val) => {
-    const docRef = doc(db, 'notes', id);
-    await updateDoc(docRef, { content: val });
+window.toggleComplete = async (id, currentStatus) => {
+    await updateDoc(doc(db, 'tasks', id), { completed: !currentStatus });
 };
 
 window.removeItem = async (id) => {
-    await deleteDoc(doc(db, mode, id));
+    if(confirm("Wil je dit item uit de flow halen?")) {
+        await deleteDoc(doc(db, mode, id));
+    }
+};
+
+window.saveEdit = async (id, val) => {
+    await updateDoc(doc(db, mode, id), mode === 'tasks' ? { text: val } : { title: val });
+};
+
+window.updateNote = async (id, val) => {
+    await updateDoc(doc(db, 'notes', id), { content: val });
 };
 
 startSync();
