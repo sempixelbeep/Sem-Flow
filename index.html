@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sem Flow v0.2.7</title>
+    <title>Sem Flow v0.2.8</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
@@ -34,7 +34,11 @@
                     <select id="catSelect"></select>
                 </div>
                 <div class="opt-group">
-                    <label>prioriteitsniveau</label>
+                    <label>deadline</label>
+                    <input type="datetime-local" id="dateInput">
+                </div>
+                <div class="opt-group">
+                    <label>prioriteit</label>
                     <select id="prioSelect">
                         <option value="1">🔥 hoog</option>
                         <option value="2" selected>🔹 normaal</option>
@@ -48,11 +52,14 @@
             </div>
         </div>
 
+        <div class="section-header">
+            resterende taken (<span id="openCount">0</span>)
+        </div>
         <div id="list-container"></div>
 
         <div id="completed-section">
             <div class="completed-header" onclick="window.toggleCompleted()">
-                <span>voltooide taken</span>
+                <span>voltooide taken (<span id="doneCount">0</span>)</span>
                 <span id="completed-arrow">▼</span>
             </div>
             <div id="completed-container" class="completed-content hidden"></div>
