@@ -2,304 +2,245 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, getDoc, setDoc } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- VERVANG DEZE MET JE EIGEN CONFIG ---
 const firebaseConfig = {
-  apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
-  authDomain: "sem-flow.firebaseapp.com",
-  projectId: "sem-flow",
-  storageBucket: "sem-flow.firebasestorage.app",
-  messagingSenderId: "275773373096",
-  appId: "1:275773373096:web:f7d44209c6159fcbdfa09d",
-  measurementId: "G-CF0MTZ10YF"
+    apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
+    authDomain: "sem-flow.firebaseapp.com",
+    projectId: "sem-flow",
+    storageBucket: "sem-flow.firebasestorage.app",
+    messagingSenderId: "275773373096",
+    appId: "1:275773373096:web:f7d44209c6159fcbdfa09d",
+    measurementId: "G-CF0MTZ10YF"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let mode = 'tasks';
+let activeCategory = 'Alles'; // Standaard alles tonen
 let cloudData = [];
 let currentPoints = 0;
-let undoTimer = null;
-let lastCompletedId = null;
+let completedOpen = false;
 
-// --- INITIALISATIE ---
-if (Notification.permission !== "granted") Notification.requestPermission();
+// Lijst met categorieën
+const categories = ['Alles', 'Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
 
-async function loadPoints() {
+// Initialisatie
+async function syncPoints() {
     const docRef = doc(db, 'settings', 'user');
-    try {
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-            currentPoints = snap.data().points || 0;
-        } else {
-            await setDoc(docRef, { points: 0 });
-        }
-        updatePointsUI();
-    } catch(e) {
-        console.log("Eerste keer start: nog geen settings doc.");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        currentPoints = snap.data().points || 0;
+        document.getElementById('pointsDisplay').innerText = currentPoints;
     }
 }
-loadPoints();
+syncPoints();
 
-function updatePointsUI() {
-    document.getElementById('pointsDisplay').innerText = currentPoints;
-}
+window.setTab = (m) => {
+    mode = m;
+    document.getElementById('taskBtn').className = `tab-btn ${mode === 'tasks' ? 'active' : ''}`;
+    document.getElementById('noteBtn').className = `tab-btn ${mode === 'notes' ? 'active' : ''}`;
+    
+    // Verberg/toon elementen afhankelijk van tab
+    document.getElementById('sort-options').style.display = mode === 'notes' ? 'block' : 'none';
+    document.getElementById('prioSelect').style.display = mode === 'tasks' ? 'block' : 'none';
+    document.querySelector('.category-scroll-container').style.display = mode === 'tasks' ? 'block' : 'none';
+    
+    startSync();
+};
 
-// Check elke 30 sec voor meldingen
-setInterval(() => {
-    const now = new Date();
-    const timeString = now.toISOString().slice(0, 16); 
-    cloudData.forEach(item => {
-        if(item.notifyAt === timeString && !item.completed) {
-            new Notification("Sem Flow", { body: item.text ? item.text.replace(/<[^>]*>/g, '') : "Herinnering!" }); // Strip HTML voor melding
-            if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-        }
-    });
-}, 30000);
-
-// --- BASIS FUNCTIES ---
 window.toggleTheme = () => {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('semTheme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
 };
 if(localStorage.getItem('semTheme') === 'dark') document.body.classList.add('dark-mode');
 
-window.setTab = (m) => {
-    mode = m;
-    document.getElementById('taskBtn').className = `tab-btn ${mode === 'tasks' ? 'active' : ''}`;
-    document.getElementById('noteBtn').className = `tab-btn ${mode === 'notes' ? 'active' : ''}`;
-    document.getElementById('prioSelect').style.display = mode === 'tasks' ? 'block' : 'none';
-    document.getElementById('catSelect').style.display = mode === 'tasks' ? 'block' : 'none';
-    startSync();
-};
-
 function startSync() {
     const q = query(collection(db, mode), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        window.render();
-        if(mode === 'tasks') updateProgress();
+        render();
+    });
+}
+
+// Render Functie (Nu met filtering!)
+window.render = () => {
+    // 1. Render de categorie balk (Alleen als we in 'tasks' modus zijn)
+    if (mode === 'tasks') renderCategoryNav();
+
+    const container = document.getElementById('list-container');
+    const completedContainer = document.getElementById('completed-container');
+    container.innerHTML = '';
+    completedContainer.innerHTML = '';
+
+    let itemsToRender = [...cloudData];
+
+    // Filteren op categorie (behalve als we op 'Alles' staan)
+    if (mode === 'tasks' && activeCategory !== 'Alles') {
+        itemsToRender = itemsToRender.filter(item => item.cat === activeCategory);
+    }
+
+    // Sorteren voor notities
+    if (mode === 'notes') {
+        const sortVal = document.getElementById('noteSort').value;
+        if (sortVal === 'alpha') itemsToRender.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    // Loop door items en plaats ze
+    itemsToRender.forEach((item) => {
+        if (item.completed) {
+            const cDiv = document.createElement('div');
+            cDiv.className = 'completed-item';
+            cDiv.innerText = item.text || item.title;
+            completedContainer.appendChild(cDiv);
+            return;
+        }
+
+        const div = document.createElement('div');
+        div.className = `taak-kaart prio-${item.prio || 3}`;
+        div.id = `kaart-${item.id}`;
+
+        if (mode === 'tasks') {
+            div.innerHTML = `
+                <div class="kaart-header" onclick="window.toggleKaart('${item.id}')">
+                    <div class="header-info">
+                        <span class="cat-label">${item.cat || 'Algemeen'}</span>
+                        <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                    </div>
+                    <div class="expand-arrow">▼</div>
+                </div>
+                <div class="kaart-body">
+                    <div class="body-inner">
+                        <div class="format-toolbar">
+                            <button class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('bold')">B</button>
+                            <button class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('italic')">I</button>
+                            <button class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('formatBlock', false, 'H3')">H1</button>
+                        </div>
+                        <div class="taak-notitie" contenteditable="true" onblur="window.saveField('${item.id}', 'note', this.innerHTML)">${item.note || 'Type notitie...'}</div>
+                        <div class="action-list">
+                            <div class="btn-row" onclick="window.completeTask('${item.id}', '${item.prio}')">✅ Voltooien</div>
+                            <div class="btn-row" onclick="window.markLater('${item.id}')">⏳ Later oppakken</div>
+                            <div class="btn-row" onclick="window.changeCat('${item.id}')">📁 Verplaatsen</div>
+                            <div class="btn-row" onclick="window.changePrio('${item.id}')">🚩 Prio aanpassen</div>
+                            <div class="btn-row delete" onclick="window.removeItem('${item.id}')">🗑️ Verwijderen</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Notities render
+            div.innerHTML = `<div class="kaart-header"><strong>${item.title}</strong></div>`;
+        }
+        container.appendChild(div);
+    });
+    
+    updateProgress();
+};
+
+function renderCategoryNav() {
+    const nav = document.getElementById('categoryNav');
+    nav.innerHTML = '';
+
+    // Tel taken per categorie
+    const counts = {};
+    cloudData.forEach(item => {
+        if(!item.completed) {
+            const cat = item.cat || 'Algemeen';
+            counts[cat] = (counts[cat] || 0) + 1;
+            counts['Alles'] = (counts['Alles'] || 0) + 1;
+        }
+    });
+
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `nav-pill ${activeCategory === cat ? 'active' : ''}`;
+        
+        // Alleen badge tonen als er taken zijn
+        const count = counts[cat] || 0;
+        const badgeHTML = count > 0 ? `<span class="badge">${count}</span>` : '';
+        
+        btn.innerHTML = `${cat} ${badgeHTML}`;
+        btn.onclick = () => {
+            activeCategory = cat;
+            render();
+        };
+        nav.appendChild(btn);
     });
 }
 
 function updateProgress() {
-    const total = cloudData.length;
-    const done = cloudData.filter(t => t.completed).length;
-    const perc = total === 0 ? 0 : Math.round((done / total) * 100);
-    document.getElementById('progressBar').style.width = perc + "%";
+    // Progress bar update op basis van huidige view
+    // (Optioneel: kan ook op basis van alles)
+    // Voor nu simpel houden
 }
 
-// --- RENDER LOGICA ---
-window.render = () => {
-    const container = document.getElementById('list-container');
-    container.innerHTML = '';
-    
-    cloudData.forEach((item) => {
-        if (item.completed && mode === 'tasks') return; 
-
-        const div = document.createElement('div');
-        div.className = `menu-item ${mode === 'tasks' ? 'prio-' + item.prio : ''}`;
-        div.setAttribute('data-id', item.id);
-        
-        let contentHTML = '';
-        
-        // DE NIEUWE TOOLBAR HTML
-        const toolbarHTML = `
-            <div class="format-toolbar">
-                <button class="fmt-btn fmt-sans" onmousedown="event.preventDefault(); window.execCmd('formatBlock', 'H3')">H1</button>
-                <button class="fmt-btn fmt-sans" onmousedown="event.preventDefault(); window.execCmd('formatBlock', 'H4')">H2</button>
-                <button class="fmt-btn" style="font-size:14px" onmousedown="event.preventDefault(); window.execCmd('removeFormat')">Aa</button>
-                <div style="width:1px; background:#555; margin:0 5px;"></div>
-                <button class="fmt-btn" onmousedown="event.preventDefault(); window.execCmd('bold')">B</button>
-                <button class="fmt-btn" style="font-style:italic" onmousedown="event.preventDefault(); window.execCmd('italic')">I</button>
-                <button class="fmt-btn" style="text-decoration:underline" onmousedown="event.preventDefault(); window.execCmd('underline')">U</button>
-            </div>
-        `;
-
-        if (mode === 'tasks') {
-            contentHTML = `
-            <div class="menu-header" onclick="window.toggleMenu('${item.id}')">
-                <input type="checkbox" style="margin-right:10px;" onclick="event.stopPropagation(); window.completeTask('${item.id}', '${item.prio}')">
-                <div class="item-text" contenteditable="true" 
-                     onblur="window.saveEdit('${item.id}', this.innerHTML)" 
-                     onclick="event.stopPropagation()">${item.text}</div> <small class="cat-tag">${item.cat}</small>
-            </div>
-            <div class="menu-content" id="menu-${item.id}">
-                <div class="menu-inner">
-                    ${toolbarHTML} <div class="action-grid">
-                         <button class="action-btn btn-opt" onclick="window.changePrio('${item.id}')">Prioriteit</button>
-                         <button class="action-btn btn-opt" onclick="window.toggleRepeat('${item.id}')">${item.repeat ? 'Herhaal: AAN' : 'Herhaal: UIT'}</button>
-                         <div style="grid-column: span 2; margin-top:5px;">
-                            <input type="datetime-local" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;" 
-                                   value="${item.notifyAt || ''}" onchange="window.setNotification('${item.id}', this.value)">
-                        </div>
-                        <button class="action-btn btn-del" onclick="window.removeItem('${item.id}')">Verwijderen</button>
-                    </div>
-                </div>
-            </div>`;
-        } else {
-            // Notities logic...
-             contentHTML = `
-            <div class="menu-header" onclick="window.toggleMenu('${item.id}')">
-                <span class="item-text" contenteditable="true" onblur="window.saveEdit('${item.id}', this.innerText)">${item.title}</span>
-            </div>
-            <div class="menu-content" id="menu-${item.id}">
-                <div class="menu-inner">
-                    <textarea class="note-area" oninput="window.updateNote('${item.id}', this.value)">${item.content || ''}</textarea>
-                    <button class="action-btn btn-del" onclick="window.removeItem('${item.id}')">Verwijderen</button>
-                </div>
-            </div>`;
-        }
-
-        div.innerHTML = contentHTML;
-        
-        // Fix voor enter toets in taken (voorkom nieuwe div)
-        const editable = div.querySelector('[contenteditable]');
-        if(editable) {
-            editable.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    editable.blur(); // Opslaan
-                }
-            });
-        }
-
-        container.appendChild(div);
-    });
-};
-
-window.toggleMenu = (id) => {
-    const content = document.getElementById(`menu-${id}`);
-    const isOpen = content.style.maxHeight;
-    document.querySelectorAll('.menu-content').forEach(c => c.style.maxHeight = null);
-    if (!isOpen) content.style.maxHeight = content.scrollHeight + 100 + "px"; // Extra ruimte voor toolbar
-};
-
-// --- RICH TEXT FUNCTIE ---
-// Dit voert commando's uit op de geselecteerde tekst in de contenteditable
-window.execCmd = (command, value = null) => {
-    document.execCommand(command, false, value);
-};
-
 // --- ACTIES ---
+window.toggleKaart = (id) => {
+    document.getElementById(`kaart-${id}`).classList.toggle('open');
+};
+
+window.toggleCompleted = () => {
+    completedOpen = !completedOpen;
+    document.getElementById('completed-container').classList.toggle('hidden', !completedOpen);
+    document.getElementById('completed-arrow').innerText = completedOpen ? '▲' : '▼';
+};
+
+window.saveField = async (id, field, value) => {
+    await updateDoc(doc(db, mode, id), { [field]: value });
+};
+
 window.addItem = async () => {
     const input = document.getElementById('mainInput');
     if (!input.value.trim()) return;
     
-    const newItem = mode === 'tasks' ? 
-        { 
-            text: input.value, // Start als platte tekst
-            prio: document.getElementById('prioSelect').value, 
-            cat: document.getElementById('catSelect').value, 
-            completed: false, 
-            timestamp: Date.now(),
-            repeat: false,
-            notifyAt: null
-        } :
-        { title: input.value, content: "", timestamp: Date.now() };
+    // Automatisch de huidige categorie kiezen (behalve bij 'Alles', dan 'Algemeen')
+    let targetCat = activeCategory;
+    if (targetCat === 'Alles') targetCat = 'Algemeen';
 
-    await addDoc(collection(db, mode), newItem);
+    const obj = mode === 'tasks' ? {
+        text: input.value,
+        note: "",
+        cat: targetCat, // Hier gebruiken we de slimme categorie
+        prio: document.getElementById('prioSelect').value,
+        completed: false,
+        timestamp: Date.now()
+    } : { title: input.value, content: "", timestamp: Date.now() };
+
+    await addDoc(collection(db, mode), obj);
     input.value = '';
-    input.focus();
-};
-
-window.saveEdit = async (id, htmlContent) => {
-    // We slaan nu HTML op (dus <b>tekst</b> wordt bewaard)
-    await updateDoc(doc(db, mode, id), mode === 'tasks' ? { text: htmlContent } : { title: htmlContent });
 };
 
 window.completeTask = async (id, prio) => {
-    triggerFireworks();
-    if ("vibrate" in navigator) navigator.vibrate(100);
-
-    const pointsMap = { '1': 100, '2': 90, '3': 70 };
-    const earned = pointsMap[prio] || 50;
+    const points = prio == 1 ? 100 : (prio == 2 ? 90 : 70);
+    currentPoints += points;
     
-    // Optimistische UI update (meteen verwijderen uit zicht)
-    const itemEl = document.querySelector(`[data-id="${id}"]`);
-    if(itemEl) itemEl.style.display = 'none';
-
     await updateDoc(doc(db, 'tasks', id), { completed: true });
+    await setDoc(doc(db, 'settings', 'user'), { points: currentPoints });
     
-    currentPoints += earned;
-    updatePointsUI();
-    updateDoc(doc(db, 'settings', 'user'), { points: currentPoints });
-
-    showToast(id, earned);
-};
-
-function showToast(id, points) {
+    document.getElementById('pointsDisplay').innerText = currentPoints;
+    
     const toast = document.getElementById('toast');
-    document.getElementById('toastPoints').innerText = points;
     toast.classList.remove('hidden');
-    lastCompletedId = { id, points };
-
-    if (undoTimer) clearTimeout(undoTimer);
-    undoTimer = setTimeout(() => {
-        toast.classList.add('hidden');
-        lastCompletedId = null;
-    }, 5000);
-}
-
-window.undoComplete = async () => {
-    if (!lastCompletedId) return;
-    
-    currentPoints -= lastCompletedId.points;
-    updatePointsUI();
-    updateDoc(doc(db, 'settings', 'user'), { points: currentPoints });
-
-    await updateDoc(doc(db, 'tasks', lastCompletedId.id), { completed: false });
-    
-    document.getElementById('toast').classList.add('hidden');
-    startSync(); // Forceer reload om item terug te tonen
+    setTimeout(() => toast.classList.add('hidden'), 3000);
 };
 
 window.removeItem = async (id) => {
-    if(confirm("Verwijderen?")) {
-        await deleteDoc(doc(db, mode, id));
-    }
+    if(confirm("Zeker weten?")) await deleteDoc(doc(db, mode, id));
+};
+
+window.changeCat = async (id) => {
+    const newCat = prompt("Nieuwe categorie:", categories.join(', '));
+    // Check of input geldig is, zo ja update
+    if (categories.includes(newCat)) await updateDoc(doc(db, 'tasks', id), { cat: newCat });
 };
 
 window.changePrio = async (id) => {
-    const newPrio = prompt("Nieuwe prioriteit (1, 2 of 3):");
-    if(['1','2','3'].includes(newPrio)) {
-        await updateDoc(doc(db, 'tasks', id), { prio: newPrio });
-    }
+    const p = prompt("Prio 1, 2 of 3?");
+    if(['1','2','3'].includes(p)) await updateDoc(doc(db, 'tasks', id), { prio: p });
 };
 
-window.toggleRepeat = async (id) => {
-    const item = cloudData.find(i => i.id === id);
-    await updateDoc(doc(db, 'tasks', id), { repeat: !item.repeat });
+window.markLater = async (id) => {
+    await updateDoc(doc(db, 'tasks', id), { cat: 'Later' });
+    alert("Verplaatst naar 'Later'");
 };
 
-window.updateNote = async (id, val) => {
-    await updateDoc(doc(db, 'notes', id), { content: val });
-};
-
-window.setNotification = async (id, dateStr) => {
-    await updateDoc(doc(db, 'tasks', id), { notifyAt: dateStr });
-};
-
-// Vuurwerk
-function triggerFireworks() {
-    const container = document.getElementById('fireworks-container');
-    const colors = ['#ff4757', '#2ecc71', '#3498db', '#f1c40f'];
-    
-    for(let i=0; i<30; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
-        p.style.left = '50%';
-        p.style.top = '50%';
-        p.style.setProperty('--tx', (Math.random()*200 - 100) + 'px');
-        p.style.setProperty('--ty', (Math.random()*200 - 100) + 'px');
-        container.appendChild(p);
-        setTimeout(() => p.remove(), 1000);
-    }
-}
-
-// Enter Key
-document.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && e.target.id === 'mainInput') window.addItem();
-});
-  
+startSync();

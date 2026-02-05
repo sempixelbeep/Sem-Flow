@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sem Flow v0.2.1</title>
+    <title>Sem Flow v0.2.3</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
 <body>
     <div id="fireworks-container"></div>
     
     <div class="top-bar">
-        <button id="themeBtn" onclick="window.toggleTheme()">🌓</button>
+        <div class="app-title">Sem Flow</div>
         <div class="flow-points">💎 <span id="pointsDisplay">0</span></div>
     </div>
 
+    <div class="category-scroll-container">
+        <div id="categoryNav" class="category-nav">
+            </div>
+    </div>
+
     <div class="app-container">
-        <header>
-            <h1>Sem Flow</h1>
-            <div class="progress-container"><div id="progressBar"></div></div>
-        </header>
+        <div class="progress-container"><div id="progressBar"></div></div>
 
         <div class="input-section">
             <input type="text" id="mainInput" placeholder="Nieuwe taak..." autofocus>
@@ -27,11 +30,6 @@
                     <option value="1">🔥 Prio 1</option>
                     <option value="2">🔸 Prio 2</option>
                     <option value="3" selected>🌿 Prio 3</option>
-                </select>
-                <select id="catSelect">
-                    <option value="Algemeen">Algemeen</option>
-                    <option value="Werk">Werk</option>
-                    <option value="Privé">Privé</option>
                 </select>
                 <button onclick="window.addItem()" id="addBtn">+</button>
             </div>
@@ -42,11 +40,35 @@
             <button id="noteBtn" class="tab-btn" onclick="window.setTab('notes')">Notities</button>
         </div>
 
+        <div id="sort-options" style="display:none; margin-bottom:15px;">
+            <select id="noteSort" onchange="window.render()" style="width:100%; padding:8px; border-radius:8px;">
+                <option value="date">Sorteer op: Datum</option>
+                <option value="alpha">Sorteer op: Alfabet</option>
+            </select>
+        </div>
+
         <div id="list-container"></div>
+
+        <div id="completed-section" style="margin-top: 40px; padding-bottom: 80px;">
+            <div class="completed-header" onclick="window.toggleCompleted()">
+                <span>Voltooide taken</span>
+                <span id="completed-arrow">▼</span>
+            </div>
+            <div id="completed-container" class="completed-content hidden"></div>
+        </div>
+    </div>
+
+    <div class="fab-container">
+        <button class="fab-btn secondary" onclick="alert('Instellingen komen in v0.3!')">
+            <span class="material-icons-round">settings</span>
+        </button>
+        <button class="fab-btn primary" onclick="window.toggleTheme()">
+            <span class="material-icons-round">dark_mode</span>
+        </button>
     </div>
 
     <div id="toast" class="toast hidden">
-        <span>Taak voltooid! (+<span id="toastPoints">0</span>)</span>
+        <span>Taak voltooid!</span>
         <button onclick="window.undoComplete()">HERSTEL</button>
     </div>
 
