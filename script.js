@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
@@ -16,120 +16,141 @@ const db = getFirestore(app);
 let mode = 'tasks';
 let activeCategory = 'Alles';
 let cloudData = [];
-const categories = ['Alles', 'Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
+const taskCategories = ['Alles', 'Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
+const allTabs = [...taskCategories, 'Notitieblok'];
 
-// --- FIX: Exporteer functies naar window voor de HTML ---
-window.setTab = (m) => {
-    mode = m;
-    const taskBtn = document.getElementById('taskBtn');
-    const noteBtn = document.getElementById('noteBtn');
-    const sortOpts = document.getElementById('sort-options');
-    const prioSel = document.getElementById('prioSelect');
-    const catCont = document.getElementById('cat-container');
-
-    if(taskBtn) taskBtn.className = `tab-btn ${mode === 'tasks' ? 'active' : ''}`;
-    if(noteBtn) noteBtn.className = `tab-btn ${mode === 'notes' ? 'active' : ''}`;
-    if(sortOpts) sortOpts.style.display = mode === 'notes' ? 'block' : 'none';
-    if(prioSel) prioSel.style.display = mode === 'tasks' ? 'block' : 'none';
-    if(catCont) catCont.style.display = mode === 'tasks' ? 'block' : 'none';
-    
+// --- INITIALISATIE ---
+window.onload = () => {
+    fillCategoryDropdown();
     startSync();
 };
 
-window.toggleCompleted = () => {
-    const container = document.getElementById('completed-container');
-    const arrow = document.getElementById('completed-arrow');
-    if(container) {
-        const isHidden = container.classList.toggle('hidden');
-        if(arrow) arrow.innerText = isHidden ? '▼' : '▲';
-    }
-};
-
-window.addItem = async () => {
-    const input = document.getElementById('mainInput');
-    const prio = document.getElementById('prioSelect');
-    if (!input || !input.value.trim()) return;
-    
-    let targetCat = activeCategory === 'Alles' ? 'Algemeen' : activeCategory;
-
-    await addDoc(collection(db, mode), {
-        text: input.value,
-        cat: targetCat,
-        prio: prio ? prio.value : "3",
-        completed: false,
-        timestamp: Date.now(),
-        note: ""
+function fillCategoryDropdown() {
+    const sel = document.getElementById('catSelect');
+    // We filteren 'Alles' en 'Notitieblok' uit de dropdown voor het toevoegen
+    taskCategories.filter(c => c !== 'Alles').forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.innerText = cat;
+        sel.appendChild(opt);
     });
-    input.value = '';
-};
+}
 
-// --- DATA LOGICA ---
 function startSync() {
-    const q = query(collection(db, mode), orderBy("timestamp", "desc"));
+    // Als we in Notitieblok zitten, laden we de 'notes' collectie
+    const collectionName = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
+    const q = query(collection(db, collectionName), orderBy("timestamp", "desc"));
+    
     onSnapshot(q, (snapshot) => {
         cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         render();
-        if(mode === 'tasks') renderCategoryNav();
     });
 }
 
-function renderCategoryNav() {
-    const nav = document.getElementById('categoryNav');
-    if(!nav) return;
-    nav.innerHTML = '';
-    
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = `nav-pill ${activeCategory === cat ? 'active' : ''}`;
-        btn.innerText = cat;
-        btn.onclick = () => { activeCategory = cat; render(); renderCategoryNav(); };
-        nav.appendChild(btn);
-    });
-}
-
-function render() {
+// --- RENDER ---
+window.render = () => {
+    renderCategoryNav();
     const container = document.getElementById('list-container');
-    const completedContainer = document.getElementById('completed-container');
-    if(!container) return;
-    
+    const compContainer = document.getElementById('completed-container');
     container.innerHTML = '';
-    if(completedContainer) completedContainer.innerHTML = '';
+    compContainer.innerHTML = '';
 
-    let items = [...cloudData];
-    if (mode === 'tasks' && activeCategory !== 'Alles') {
-        items = items.filter(i => i.cat === activeCategory);
-    }
+    cloudData.forEach(item => {
+        // Filtering: alleen tonen als categorie matcht (tenzij we op 'Alles' staan)
+        if (activeCategory !== 'Alles' && activeCategory !== 'Notitieblok' && item.cat !== activeCategory) return;
 
-    items.forEach(item => {
         const div = document.createElement('div');
-        div.className = `taak-kaart prio-${item.prio || 3}`;
         
-        if(item.completed) {
-            div.innerHTML = `<div class="completed-item">${item.text}</div>`;
-            if(completedContainer) completedContainer.appendChild(div);
+        if (activeCategory === 'Notitieblok') {
+            // Notitie stijl
+            div.className = 'taak-kaart';
+            div.innerHTML = `<div class="kaart-header">📔 ${item.text || item.title}</div>`;
         } else {
+            // Taak stijl
+            if (item.completed) {
+                const cDiv = document.createElement('div');
+                cDiv.className = 'completed-item';
+                cDiv.innerText = item.text;
+                compContainer.appendChild(cDiv);
+                return;
+            }
+            div.className = `taak-kaart prio-${item.prio || 3}`;
             div.innerHTML = `
                 <div class="kaart-header" onclick="this.parentElement.classList.toggle('open')">
                     <div class="header-info">
-                        <span class="cat-label">${item.cat || 'Algemeen'}</span>
+                        <span class="cat-label">${item.cat}</span>
                         <div class="taak-naam">${item.text}</div>
                     </div>
                     <div class="expand-arrow">▼</div>
                 </div>
                 <div class="kaart-body">
-                    <div class="body-inner">
-                        <div class="taak-notitie" contenteditable="true" onblur="window.saveField('${item.id}', 'note', this.innerHTML)">${item.note || 'Notitie...'}</div>
-                        <button class="btn-row" onclick="window.completeTask('${item.id}')">✅ Klaar</button>
+                    <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie toevoegen...">${item.note || ''}</textarea>
+                    <div class="actions">
+                        <button class="btn-row" onclick="window.completeTask('${item.id}')">✅ Voltooien</button>
+                        <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Verwijderen</button>
                     </div>
                 </div>`;
-            container.appendChild(div);
         }
+        container.appendChild(div);
+    });
+};
+
+function renderCategoryNav() {
+    const nav = document.getElementById('categoryNav');
+    nav.innerHTML = '';
+    allTabs.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `nav-pill ${activeCategory === cat ? 'active' : ''} ${cat === 'Notitieblok' ? 'special' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+            activeCategory = cat;
+            startSync(); // Herstart sync voor de juiste collectie
+        };
+        nav.appendChild(btn);
     });
 }
 
-// Global functions for window
-window.saveField = async (id, field, val) => { await updateDoc(doc(db, mode, id), { [field]: val }); };
-window.completeTask = async (id) => { await updateDoc(doc(db, 'tasks', id), { completed: true }); };
-window.toggleTheme = () => { document.body.classList.toggle('dark-mode'); };
+// --- ACTIES ---
+window.addItem = async () => {
+    const input = document.getElementById('mainInput');
+    if (!input.value.trim()) return;
 
-startSync();
+    const collectionName = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
+    const data = activeCategory === 'Notitieblok' ? {
+        text: input.value,
+        timestamp: Date.now()
+    } : {
+        text: input.value,
+        cat: document.getElementById('catSelect').value,
+        prio: document.getElementById('prioSelect').value,
+        completed: false,
+        note: "",
+        timestamp: Date.now()
+    };
+
+    await addDoc(collection(db, collectionName), data);
+    input.value = '';
+};
+
+window.saveField = async (id, field, val) => {
+    const col = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
+    await updateDoc(doc(db, col, id), { [field]: val });
+};
+
+window.completeTask = async (id) => {
+    await updateDoc(doc(db, 'tasks', id), { completed: true });
+};
+
+window.deleteItem = async (id) => {
+    const col = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
+    if(confirm("Verwijderen?")) await deleteDoc(doc(db, col, id));
+};
+
+window.toggleCompleted = () => {
+    const cont = document.getElementById('completed-container');
+    cont.classList.toggle('hidden');
+};
+
+window.toggleTheme = () => {
+    document.body.classList.toggle('dark-mode');
+};

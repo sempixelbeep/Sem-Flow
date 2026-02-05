@@ -1,115 +1,66 @@
 :root {
-    --bg-color: #f4f7f6;
+    --bg-color: #f2f2f7;
     --bg-card: #ffffff;
-    --text-color: #2d3436;
-    --accent: #0071e3;
-    --toolbar-bg: #1e1e1e;
-    --border: #dfe6e9;
-    --nav-active: #e1ecf7; /* Lichte blauwe achtergrond voor actieve tab */
-    --nav-text-active: #0071e3;
+    --text-color: #1c1c1e;
+    --accent: #007aff;
+    --border: #e5e5ea;
 }
 
 body.dark-mode {
-    --bg-color: #121212;
-    --bg-card: #1e1e1e;
-    --text-color: #e0e0e0;
-    --border: #333;
-    --toolbar-bg: #000;
-    --nav-active: #2c2c2e;
-    --nav-text-active: #64b5f6;
+    --bg-color: #000000;
+    --bg-card: #1c1c1e;
+    --text-color: #ffffff;
+    --border: #38383a;
 }
 
-body { font-family: -apple-system, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; }
+body { font-family: -apple-system, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; }
 
-/* Top Bar aanpassing */
-.top-bar { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-.app-title { font-size: 24px; font-weight: 800; }
-.flow-points { background: linear-gradient(135deg, #6c5ce7, #8e44ad); color: white; padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; }
+.top-bar { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+.app-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
 
-.app-container { max-width: 500px; margin: 0 auto; padding: 0 20px; }
-
-/* Categorie Navigatie (Google Tasks Stijl) */
-.category-scroll-container {
-    position: sticky; top: 0; z-index: 100;
-    background: var(--bg-color); /* Blend met achtergrond */
-    padding: 10px 0 15px 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid transparent;
-    transition: 0.3s;
-}
-.category-nav {
-    display: flex; gap: 10px; overflow-x: auto; padding-right: 20px;
-    scrollbar-width: none; /* Firefox scrollbar weg */
-}
-.category-nav::-webkit-scrollbar { display: none; /* Chrome/Safari scrollbar weg */ }
-
-.nav-pill {
-    white-space: nowrap; padding: 8px 16px; border-radius: 20px;
+/* Navigatie pillen */
+.category-scroll-container { padding: 10px 0 20px 20px; overflow-x: auto; display: flex; }
+.category-nav { display: flex; gap: 10px; }
+.nav-pill { 
+    white-space: nowrap; padding: 8px 16px; border-radius: 20px; 
     background: var(--bg-card); border: 1px solid var(--border);
-    color: var(--text-color); font-weight: 600; font-size: 14px;
-    cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+    font-weight: 600; cursor: pointer; transition: 0.2s;
 }
-.nav-pill.active {
-    background: var(--nav-active); color: var(--nav-text-active); border-color: transparent;
+.nav-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+.nav-pill.special { border: 1.5px solid var(--accent); color: var(--accent); }
+.nav-pill.special.active { color: white; }
+
+/* Invoer */
+.input-section { background: var(--bg-card); margin: 0 20px 20px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+#mainInput { width: 100%; border: none; font-size: 17px; background: transparent; color: inherit; outline: none; }
+.options { display: flex; gap: 10px; margin-top: 15px; }
+select { background: var(--bg-color); border: none; padding: 8px; border-radius: 8px; color: inherit; flex: 1; font-weight: 600; }
+#addBtn { background: var(--accent); color: white; border: none; border-radius: 10px; width: 40px; font-weight: bold; }
+
+/* Kaarten */
+.app-container { padding: 0 20px; }
+.taak-kaart { 
+    background: var(--bg-card); border-radius: 14px; margin-bottom: 12px; 
+    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-.badge {
-    background: rgba(0,0,0,0.1); color: inherit; font-size: 11px;
-    padding: 2px 6px; border-radius: 10px;
-}
+.prio-1 { border-left: 4px solid #ff3b30; }
+.prio-2 { border-left: 4px solid #ff9500; }
+.prio-3 { border-left: 4px solid #34c759; }
 
-/* Input & Options */
-.input-section { background: var(--bg-card); padding: 15px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-input[type="text"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: inherit; font-size: 16px; outline: none; box-sizing: border-box; }
-.options { display: flex; gap: 8px; margin-top: 12px; }
-select { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: inherit; }
-#addBtn { background: var(--accent); color: white; border: none; border-radius: 10px; width: 45px; font-size: 24px; cursor: pointer; }
-
-/* FAB (Floating Action Buttons) */
-.fab-container {
-    position: fixed; bottom: 25px; right: 25px;
-    display: flex; flex-direction: column; gap: 15px; z-index: 200;
-}
-.fab-btn {
-    width: 56px; height: 56px; border-radius: 50%; border: none;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
-}
-.fab-btn:active { transform: scale(0.9); }
-.fab-btn.primary { background: var(--bg-card); color: var(--text-color); font-size: 24px; }
-.fab-btn.secondary { width: 48px; height: 48px; background: var(--bg-card); color: var(--text-color); opacity: 0.9; }
-
-/* Progress Bar */
-.progress-container { width: 100%; background: rgba(0,0,0,0.05); border-radius: 20px; height: 4px; margin-bottom: 20px; overflow: hidden; }
-#progressBar { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
-
-/* Taakkaart styling (identiek aan v0.3.0) */
-.taak-kaart { background: var(--bg-card); border-radius: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
-.prio-1 { border-left-color: #ff4757; } .prio-2 { border-left-color: #ffa502; } .prio-3 { border-left-color: #27ae60; }
-
-.kaart-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.header-info { display: flex; flex-direction: column; }
-.cat-label { font-size: 10px; text-transform: uppercase; color: #b2bec3; font-weight: 800; margin-bottom: 2px; }
+.kaart-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+.cat-label { font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; }
 .taak-naam { font-size: 16px; font-weight: 600; }
-.expand-arrow { transition: 0.3s; color: #aaa; } .taak-kaart.open .expand-arrow { transform: rotate(180deg); }
 
-.kaart-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; background: rgba(0,0,0,0.02); }
-.taak-kaart.open .kaart-body { max-height: 800px; border-top: 1px solid var(--border); }
-.body-inner { padding: 15px; }
+.kaart-body { display: none; padding: 15px; border-top: 1px solid var(--border); }
+.taak-kaart.open .kaart-body { display: block; }
 
-.taak-notitie { min-height: 80px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
-.action-list { display: flex; flex-direction: column; gap: 8px; }
-.btn-row { background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; cursor: pointer; }
-.delete { color: #ff4757; border-color: rgba(255,71,87,0.2); }
+textarea { width: 100%; height: 80px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-family: inherit; resize: none; margin-bottom: 10px; }
+.actions { display: flex; gap: 10px; }
+.btn-row { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
+.delete { background: #ff3b3020; color: #ff3b30; }
 
-/* Completed Section */
-.completed-header { display: flex; justify-content: space-between; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; font-weight: 700; }
-.completed-content.hidden { display: none; }
-.completed-item { padding: 10px; opacity: 0.6; text-decoration: line-through; border-bottom: 1px solid var(--border); }
-
-.format-toolbar { background: var(--toolbar-bg); padding: 5px; border-radius: 8px; display: flex; gap: 10px; margin-bottom: 10px; }
-.fmt-btn { color: white; background: none; border: none; cursor: pointer; font-weight: bold; }
-
-/* Tabs (Taken/Notities) */
-.tab-switcher { display: flex; gap: 10px; margin-bottom: 20px; }
-.tab-btn { flex: 1; padding: 10px; background: transparent; border: none; cursor: pointer; color: var(--text-color); font-weight: 600; opacity: 0.5; border-bottom: 2px solid transparent; }
-.tab-btn.active { opacity: 1; border-bottom-color: var(--accent); }
+/* FAB */
+.fab-container { position: fixed; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 15px; }
+.fab-btn { width: 50px; height: 50px; border-radius: 25px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.fab-btn.primary { background: var(--bg-card); color: var(--text-color); }
+.fab-btn.secondary { background: var(--bg-card); color: var(--text-color); width: 44px; height: 44px; }
