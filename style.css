@@ -14,81 +14,77 @@ body.dark-mode {
     --border: #38383a;
 }
 
-body { font-family: -apple-system, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; }
+body { font-family: -apple-system, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; transition: background 0.3s; }
 
+/* Top Bar & Search */
 .top-bar { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
 .app-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
 
-/* Navigatie pillen */
-.category-scroll-container { padding: 10px 0 20px 20px; overflow-x: auto; display: flex; }
+.search-container { margin: 0 20px 15px; position: relative; display: flex; align-items: center; }
+#searchInput { 
+    width: 100%; padding: 12px 15px 12px 40px; border-radius: 12px; border: none; 
+    background: var(--bg-card); color: var(--text-color); font-size: 15px; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03); text-transform: lowercase; outline: none;
+}
+.search-icon { position: absolute; left: 12px; color: var(--label-color); font-size: 20px; }
+
+/* Navigatie Pillen */
+.category-scroll-container { padding: 10px 0 20px 20px; overflow-x: auto; display: flex; scrollbar-width: none; }
 .category-nav { display: flex; gap: 10px; }
 .nav-pill { 
     white-space: nowrap; padding: 8px 16px; border-radius: 20px; 
     background: var(--bg-card); border: 1px solid var(--border);
-    font-weight: 600; cursor: pointer; transition: 0.2s;
+    font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--text-color);
+    text-transform: lowercase;
 }
-.nav-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+.nav-pill.active { background: var(--accent); color: white !important; border-color: var(--accent); }
 .nav-pill.special { border: 1.5px solid var(--accent); color: var(--accent); }
-.nav-pill.special.active { color: white; }
 
-/* Invoer Sectie Vernieuwd */
+/* Invoer Sectie */
 .input-section { background: var(--bg-card); margin: 0 20px 20px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-#mainInput { width: 100%; border: none; font-size: 17px; background: transparent; color: inherit; outline: none; margin-bottom: 15px;}
-
+#mainInput { width: 100%; border: none; font-size: 17px; background: transparent; color: inherit; outline: none; margin-bottom: 15px; text-transform: lowercase; }
 .options-grid { display: flex; gap: 10px; align-items: flex-end; }
 .opt-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.opt-group.btn-group { flex: 0 0 50px; } /* Knop is smal */
-
-label { font-size: 11px; font-weight: 700; color: var(--label-color); text-transform: uppercase; letter-spacing: 0.5px; }
-
-select { 
-    width: 100%; background: var(--bg-color); border: none; 
-    padding: 10px; border-radius: 8px; color: inherit; font-weight: 600; 
-    appearance: none; -webkit-appearance: none;
-}
-
-#addBtn { 
-    background: var(--accent); color: white; border: none; 
-    border-radius: 10px; height: 38px; width: 100%; 
-    font-size: 24px; display: flex; align-items: center; justify-content: center; 
-    cursor: pointer;
-}
+.opt-group.btn-group { flex: 0 0 50px; }
+label { font-size: 11px; font-weight: 700; color: var(--label-color); text-transform: lowercase; letter-spacing: 0.5px; }
+select { width: 100%; background: var(--bg-color); border: none; padding: 10px; border-radius: 8px; color: inherit; font-weight: 600; outline: none; }
+#addBtn { background: var(--accent); color: white; border: none; border-radius: 10px; height: 38px; width: 100%; font-size: 24px; cursor: pointer; }
 
 /* Kaarten */
-.app-container { padding: 0 20px 40px 20px; }
-.taak-kaart { 
-    background: var(--bg-card); border-radius: 14px; margin-bottom: 12px; 
-    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
+.app-container { padding: 0 20px 100px; }
+.taak-kaart { background: var(--bg-card); border-radius: 14px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: 0.3s; }
 .prio-1 { border-left: 4px solid #ff3b30; }
-.prio-2 { border-left: 4px solid #007aff; } /* Normaal is nu blauw */
+.prio-2 { border-left: 4px solid #007aff; }
 .prio-3 { border-left: 4px solid #34c759; }
-
-/* Voltooide kaart styling */
-.taak-kaart.completed { opacity: 0.6; }
-.taak-kaart.completed .taak-naam { text-decoration: line-through; }
+.taak-kaart.completed { opacity: 0.5; }
 
 .kaart-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.header-info { flex: 1; }
-.cat-label { font-size: 10px; font-weight: 800; color: #8e8e93; text-transform: uppercase; display: block; margin-bottom: 4px; }
-.taak-naam { font-size: 16px; font-weight: 600; display: block; outline: none; }
+.cat-label { font-size: 10px; font-weight: 800; color: #8e8e93; text-transform: lowercase; display: block; margin-bottom: 4px; }
+.taak-naam { font-size: 16px; font-weight: 600; outline: none; text-transform: lowercase; }
 
 .kaart-body { display: none; padding: 15px; border-top: 1px solid var(--border); }
 .taak-kaart.open .kaart-body { display: block; }
-.taak-kaart.open .expand-arrow { transform: rotate(180deg); }
 
-textarea { width: 100%; height: 80px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-family: inherit; resize: none; margin-bottom: 10px; box-sizing: border-box;}
-.actions { display: flex; gap: 10px; }
-.btn-row { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; }
+/* Notitieblok Specifiek */
+.notitie-card { padding: 20px; }
+.notitie-textarea { 
+    width: 100%; min-height: 250px; background: transparent; border: none; 
+    color: var(--text-color); font-family: inherit; font-size: 16px; 
+    line-height: 1.6; resize: none; outline: none; margin-top: 10px;
+}
+
+textarea { width: 100%; height: 80px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-family: inherit; resize: none; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-row { flex: 1; min-width: 100px; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 12px; text-transform: lowercase; }
+.secondary { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border); }
 .delete { background: #ff3b3020; color: #ff3b30; }
 .restore { background: #34c75920; color: #27ae60; }
 
-/* Completed Section */
-.completed-header { display: flex; justify-content: space-between; padding: 15px 0; font-weight: 700; color: var(--label-color); cursor: pointer; margin-top: 30px; }
-.completed-content.hidden { display: none; }
+/* Voltooid */
+.completed-header { display: flex; justify-content: space-between; padding: 15px 0; font-weight: 700; color: var(--label-color); cursor: pointer; text-transform: lowercase; }
+.hidden { display: none; }
 
 /* FAB */
 .fab-container { position: fixed; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 15px; }
 .fab-btn { width: 50px; height: 50px; border-radius: 25px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .fab-btn.primary { background: var(--bg-card); color: var(--text-color); }
-.fab-btn.secondary { background: var(--bg-card); color: var(--text-color); width: 44px; height: 44px; }

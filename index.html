@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sem Flow v0.2.5</title>
+    <title>Sem Flow v0.2.7</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
@@ -15,25 +15,30 @@
         <div class="flow-points">💎 <span id="pointsDisplay">0</span></div>
     </div>
 
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="zoek in flow..." oninput="window.render()">
+        <span class="material-icons-round search-icon">search</span>
+    </div>
+
     <div class="category-scroll-container">
         <div id="categoryNav" class="category-nav"></div>
     </div>
 
     <div class="app-container">
         <div class="input-section">
-            <input type="text" id="mainInput" placeholder="Wat moet er gebeuren?" autofocus>
+            <input type="text" id="mainInput" placeholder="wat moet er gebeuren?" autofocus>
             
             <div class="options-grid">
                 <div class="opt-group">
-                    <label>Categorie</label>
+                    <label>categorie</label>
                     <select id="catSelect"></select>
                 </div>
                 <div class="opt-group">
-                    <label>Prioriteitsniveau</label>
+                    <label>prioriteitsniveau</label>
                     <select id="prioSelect">
-                        <option value="1">🔥 Hoog</option>
-                        <option value="2" selected>🔹 Normaal</option>
-                        <option value="3">🌱 Laag</option>
+                        <option value="1">🔥 hoog</option>
+                        <option value="2" selected>🔹 normaal</option>
+                        <option value="3">🌱 laag</option>
                     </select>
                 </div>
                 <div class="opt-group btn-group">
@@ -47,7 +52,7 @@
 
         <div id="completed-section">
             <div class="completed-header" onclick="window.toggleCompleted()">
-                <span>Voltooide taken</span>
+                <span>voltooide taken</span>
                 <span id="completed-arrow">▼</span>
             </div>
             <div id="completed-container" class="completed-content hidden"></div>
@@ -55,7 +60,7 @@
     </div>
 
     <div class="fab-container">
-        <button class="fab-btn secondary" onclick="alert('Instellingen v0.3')">
+        <button class="fab-btn secondary" onclick="alert('instellingen v0.3')">
             <span class="material-icons-round">settings</span>
         </button>
         <button class="fab-btn primary" onclick="window.toggleTheme()">

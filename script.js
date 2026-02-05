@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyD-ah3ZTcZAUpbKtqkCAvzr3J1kciJbZlg",
@@ -13,10 +13,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let activeCategory = 'Alles';
+let activeCategory = 'alles';
 let cloudData = [];
-const taskCategories = ['Alles', 'Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
-const allTabs = [...taskCategories, 'Notitieblok'];
+const taskCategories = ['alles', 'algemeen', 'ideeën', 'opschrijven', 'kopen', 'werk', 'privé', 'overige', 'later'];
+const allTabs = [...taskCategories, 'notitieblok'];
 
 window.onload = () => {
     fillCategoryDropdown();
@@ -26,8 +26,7 @@ window.onload = () => {
 function fillCategoryDropdown() {
     const sel = document.getElementById('catSelect');
     if(!sel) return;
-    sel.innerHTML = '';
-    taskCategories.filter(c => c !== 'Alles').forEach(cat => {
+    taskCategories.filter(c => c !== 'alles').forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
         opt.innerText = cat;
@@ -36,12 +35,11 @@ function fillCategoryDropdown() {
 }
 
 function startSync() {
-    const collectionName = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
-    const q = query(collection(db, collectionName), orderBy("timestamp", "desc"));
-    
+    const colName = activeCategory === 'notitieblok' ? 'notes' : 'tasks';
+    const q = query(collection(db, colName), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        render();
+        window.render();
     });
 }
 
@@ -49,138 +47,103 @@ window.render = () => {
     renderCategoryNav();
     const container = document.getElementById('list-container');
     const compContainer = document.getElementById('completed-container');
-    if(!container) return;
-
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || "";
+    
     container.innerHTML = '';
     compContainer.innerHTML = '';
 
     cloudData.forEach(item => {
-        // Filter logica
-        if (activeCategory !== 'Alles' && activeCategory !== 'Notitieblok' && item.cat !== activeCategory) return;
-
-        // Maak de taakkaart container
-        const div = document.createElement('div');
+        // Filter: Categorie
+        if (activeCategory !== 'alles' && activeCategory !== 'notitieblok' && item.cat !== activeCategory) return;
         
-        // --- 1. NOTITIEBLOK MODUS ---
-        if (activeCategory === 'Notitieblok') {
-            div.className = 'taak-kaart';
+        // Filter: Zoeken
+        const textMatch = item.text?.toLowerCase().includes(searchTerm);
+        const noteMatch = item.note?.toLowerCase().includes(searchTerm);
+        if (searchTerm && !textMatch && !noteMatch) return;
+
+        const div = document.createElement('div');
+
+        if (activeCategory === 'notitieblok') {
+            div.className = 'taak-kaart notitie-card';
             div.innerHTML = `
-                <div class="kaart-header" onclick="this.parentElement.classList.toggle('open')">
-                    <div class="taak-naam" contenteditable="true" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                <div class="header-info">
+                    <div class="taak-naam" contenteditable="true" style="font-size: 20px;" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                    <span class="cat-label">${new Date(item.timestamp).toLocaleDateString()}</span>
                 </div>
-                <div class="kaart-body">
-                   <div class="actions"><button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Verwijderen</button></div>
+                <textarea class="notitie-textarea" onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="begin hier met schrijven...">${item.note || ''}</textarea>
+                <div class="actions">
+                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ wis notitie</button>
                 </div>`;
             container.appendChild(div);
-            return;
-        }
-
-        // --- 2. TAAK MODUS ---
-        // Bepaal classes: voltooid krijgt extra class 'completed', anders gewoon prio-kleur
-        div.className = `taak-kaart prio-${item.prio || 2} ${item.completed ? 'completed' : ''}`;
-        
-        // De HTML inhoud van de kaart (zowel voor actief als voltooid bijna hetzelfde)
-        // Let op: contenteditable staat aan, klik op titel = typen.
-        // Klik op header (behalve titel) = openklappen.
-        div.innerHTML = `
-            <div class="kaart-header" onclick="window.toggleCard(event, this)">
-                <div class="header-info">
-                    <span class="cat-label">${item.cat}</span>
-                    <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
-                </div>
-                <div class="expand-arrow">▼</div>
-            </div>
-            <div class="kaart-body">
-                <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie...">${item.note || ''}</textarea>
-                <div class="actions">
-                    ${!item.completed ? 
-                        `<button class="btn-row" onclick="window.completeTask('${item.id}')">✅ Voltooien</button>` : 
-                        `<button class="btn-row restore" onclick="window.undoComplete('${item.id}')">♻️ Terugzetten</button>`
-                    }
-                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Wis</button>
-                </div>
-            </div>`;
-
-        // Plaats in juiste bakje
-        if (item.completed) {
-            compContainer.appendChild(div);
         } else {
-            container.appendChild(div);
+            div.className = `taak-kaart prio-${item.prio || 2} ${item.completed ? 'completed' : ''}`;
+            div.innerHTML = `
+                <div class="kaart-header" onclick="window.toggleCard(event, this)">
+                    <div class="header-info">
+                        <span class="cat-label">${item.cat}</span>
+                        <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                    </div>
+                    <div class="expand-arrow">▼</div>
+                </div>
+                <div class="kaart-body">
+                    <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="notitie...">${item.note || ''}</textarea>
+                    <div class="actions">
+                        ${!item.completed ? 
+                            `<button class="btn-row" onclick="window.completeTask('${item.id}')">✅ voltooien</button>` : 
+                            `<button class="btn-row restore" onclick="window.undoComplete('${item.id}')">♻️ terugzetten</button>`
+                        }
+                        <button class="btn-row secondary" onclick="window.quickChangeCat('${item.id}')">📁 categorie</button>
+                        <button class="btn-row secondary" onclick="window.quickChangePrio('${item.id}')">🚩 prio</button>
+                        <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ wis</button>
+                    </div>
+                </div>`;
+            item.completed ? compContainer.appendChild(div) : container.appendChild(div);
         }
     });
 };
 
 function renderCategoryNav() {
     const nav = document.getElementById('categoryNav');
-    if(!nav) return;
     nav.innerHTML = '';
     allTabs.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = `nav-pill ${activeCategory === cat ? 'active' : ''} ${cat === 'Notitieblok' ? 'special' : ''}`;
+        btn.className = `nav-pill ${activeCategory === cat ? 'active' : ''} ${cat === 'notitieblok' ? 'special' : ''}`;
         btn.innerText = cat;
-        btn.onclick = () => {
-            activeCategory = cat;
-            startSync();
-        };
+        btn.onclick = () => { activeCategory = cat; startSync(); };
         nav.appendChild(btn);
     });
 }
 
-// --- GLOBALE ACTIES ---
-
-// Nieuw: Toggle functie die niet triggert als je op de bewerkbare titel klikt
-window.toggleCard = (e, header) => {
-    // Alleen openklappen als er niet in de titel geklikt wordt (dat handelen we af met stopPropagation in HTML)
-    header.parentElement.classList.toggle('open');
-};
-
 window.addItem = async () => {
     const input = document.getElementById('mainInput');
     if (!input.value.trim()) return;
-
-    const collectionName = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
-    const data = activeCategory === 'Notitieblok' ? {
-        text: input.value,
-        timestamp: Date.now()
-    } : {
-        text: input.value,
-        cat: document.getElementById('catSelect').value,
-        prio: document.getElementById('prioSelect').value,
-        completed: false,
-        note: "",
-        timestamp: Date.now()
+    const col = activeCategory === 'notitieblok' ? 'notes' : 'tasks';
+    const data = activeCategory === 'notitieblok' ? { text: input.value, timestamp: Date.now() } : {
+        text: input.value, cat: document.getElementById('catSelect').value,
+        prio: document.getElementById('prioSelect').value, completed: false, note: "", timestamp: Date.now()
     };
-
-    await addDoc(collection(db, collectionName), data);
+    await addDoc(collection(db, col), data);
     input.value = '';
 };
 
 window.saveField = async (id, field, val) => {
-    const col = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
-    await updateDoc(doc(db, col, id), { [field]: val });
+    const col = activeCategory === 'notitieblok' ? 'notes' : 'tasks';
+    await updateDoc(doc(db, col, id), { [field]: val.trim() });
 };
 
-window.completeTask = async (id) => {
-    await updateDoc(doc(db, 'tasks', id), { completed: true });
+window.quickChangeCat = async (id) => {
+    const newCat = prompt(`nieuwe categorie:\n${taskCategories.filter(c=>c!=='alles').join(', ')}`);
+    if (newCat && taskCategories.includes(newCat.toLowerCase())) await updateDoc(doc(db, 'tasks', id), { cat: newCat.toLowerCase() });
 };
 
-// NIEUW: Terugzetten van voltooide taak
-window.undoComplete = async (id) => {
-    await updateDoc(doc(db, 'tasks', id), { completed: false });
+window.quickChangePrio = async (id) => {
+    const newPrio = prompt("prio: 1 (hoog), 2 (normaal), 3 (laag)");
+    if (['1','2','3'].includes(newPrio)) await updateDoc(doc(db, 'tasks', id), { prio: newPrio });
 };
 
-window.deleteItem = async (id) => {
-    const col = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
-    if(confirm("Verwijderen?")) await deleteDoc(doc(db, col, id));
-};
-
-window.toggleCompleted = () => {
-    document.getElementById('completed-container').classList.toggle('hidden');
-    // Pijl omdraaien
-    const arrow = document.getElementById('completed-arrow');
-    arrow.innerText = arrow.innerText === '▼' ? '▲' : '▼';
-};
-
-window.toggleTheme = () => {
-    document.body.classList.toggle('dark-mode');
-};
+window.completeTask = async (id) => { await updateDoc(doc(db, 'tasks', id), { completed: true }); };
+window.undoComplete = async (id) => { await updateDoc(doc(db, 'tasks', id), { completed: false }); };
+window.deleteItem = async (id) => { if(confirm("verwijderen?")) await deleteDoc(doc(db, activeCategory === 'notitieblok' ? 'notes' : 'tasks', id)); };
+window.toggleCard = (e, header) => { header.parentElement.classList.toggle('open'); };
+window.toggleCompleted = () => { document.getElementById('completed-container').classList.toggle('hidden'); };
+window.toggleTheme = () => { document.body.classList.toggle('dark-mode'); };
