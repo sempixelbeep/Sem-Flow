@@ -13,13 +13,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let mode = 'tasks';
 let activeCategory = 'Alles';
 let cloudData = [];
 const taskCategories = ['Alles', 'Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
 const allTabs = [...taskCategories, 'Notitieblok'];
 
-// --- INITIALISATIE ---
 window.onload = () => {
     fillCategoryDropdown();
     startSync();
@@ -27,7 +25,8 @@ window.onload = () => {
 
 function fillCategoryDropdown() {
     const sel = document.getElementById('catSelect');
-    // We filteren 'Alles' en 'Notitieblok' uit de dropdown voor het toevoegen
+    if(!sel) return;
+    sel.innerHTML = '';
     taskCategories.filter(c => c !== 'Alles').forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
@@ -37,7 +36,6 @@ function fillCategoryDropdown() {
 }
 
 function startSync() {
-    // Als we in Notitieblok zitten, laden we de 'notes' collectie
     const collectionName = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
     const q = query(collection(db, collectionName), orderBy("timestamp", "desc"));
     
@@ -47,56 +45,74 @@ function startSync() {
     });
 }
 
-// --- RENDER ---
 window.render = () => {
     renderCategoryNav();
     const container = document.getElementById('list-container');
     const compContainer = document.getElementById('completed-container');
+    if(!container) return;
+
     container.innerHTML = '';
     compContainer.innerHTML = '';
 
     cloudData.forEach(item => {
-        // Filtering: alleen tonen als categorie matcht (tenzij we op 'Alles' staan)
+        // Filter logica
         if (activeCategory !== 'Alles' && activeCategory !== 'Notitieblok' && item.cat !== activeCategory) return;
 
+        // Maak de taakkaart container
         const div = document.createElement('div');
         
+        // --- 1. NOTITIEBLOK MODUS ---
         if (activeCategory === 'Notitieblok') {
-            // Notitie stijl
             div.className = 'taak-kaart';
-            div.innerHTML = `<div class="kaart-header">📔 ${item.text || item.title}</div>`;
-        } else {
-            // Taak stijl
-            if (item.completed) {
-                const cDiv = document.createElement('div');
-                cDiv.className = 'completed-item';
-                cDiv.innerText = item.text;
-                compContainer.appendChild(cDiv);
-                return;
-            }
-            div.className = `taak-kaart prio-${item.prio || 3}`;
             div.innerHTML = `
                 <div class="kaart-header" onclick="this.parentElement.classList.toggle('open')">
-                    <div class="header-info">
-                        <span class="cat-label">${item.cat}</span>
-                        <div class="taak-naam">${item.text}</div>
-                    </div>
-                    <div class="expand-arrow">▼</div>
+                    <div class="taak-naam" contenteditable="true" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
                 </div>
                 <div class="kaart-body">
-                    <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie toevoegen...">${item.note || ''}</textarea>
-                    <div class="actions">
-                        <button class="btn-row" onclick="window.completeTask('${item.id}')">✅ Voltooien</button>
-                        <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Verwijderen</button>
-                    </div>
+                   <div class="actions"><button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Verwijderen</button></div>
                 </div>`;
+            container.appendChild(div);
+            return;
         }
-        container.appendChild(div);
+
+        // --- 2. TAAK MODUS ---
+        // Bepaal classes: voltooid krijgt extra class 'completed', anders gewoon prio-kleur
+        div.className = `taak-kaart prio-${item.prio || 2} ${item.completed ? 'completed' : ''}`;
+        
+        // De HTML inhoud van de kaart (zowel voor actief als voltooid bijna hetzelfde)
+        // Let op: contenteditable staat aan, klik op titel = typen.
+        // Klik op header (behalve titel) = openklappen.
+        div.innerHTML = `
+            <div class="kaart-header" onclick="window.toggleCard(event, this)">
+                <div class="header-info">
+                    <span class="cat-label">${item.cat}</span>
+                    <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                </div>
+                <div class="expand-arrow">▼</div>
+            </div>
+            <div class="kaart-body">
+                <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie...">${item.note || ''}</textarea>
+                <div class="actions">
+                    ${!item.completed ? 
+                        `<button class="btn-row" onclick="window.completeTask('${item.id}')">✅ Voltooien</button>` : 
+                        `<button class="btn-row restore" onclick="window.undoComplete('${item.id}')">♻️ Terugzetten</button>`
+                    }
+                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Wis</button>
+                </div>
+            </div>`;
+
+        // Plaats in juiste bakje
+        if (item.completed) {
+            compContainer.appendChild(div);
+        } else {
+            container.appendChild(div);
+        }
     });
 };
 
 function renderCategoryNav() {
     const nav = document.getElementById('categoryNav');
+    if(!nav) return;
     nav.innerHTML = '';
     allTabs.forEach(cat => {
         const btn = document.createElement('button');
@@ -104,13 +120,20 @@ function renderCategoryNav() {
         btn.innerText = cat;
         btn.onclick = () => {
             activeCategory = cat;
-            startSync(); // Herstart sync voor de juiste collectie
+            startSync();
         };
         nav.appendChild(btn);
     });
 }
 
-// --- ACTIES ---
+// --- GLOBALE ACTIES ---
+
+// Nieuw: Toggle functie die niet triggert als je op de bewerkbare titel klikt
+window.toggleCard = (e, header) => {
+    // Alleen openklappen als er niet in de titel geklikt wordt (dat handelen we af met stopPropagation in HTML)
+    header.parentElement.classList.toggle('open');
+};
+
 window.addItem = async () => {
     const input = document.getElementById('mainInput');
     if (!input.value.trim()) return;
@@ -141,14 +164,21 @@ window.completeTask = async (id) => {
     await updateDoc(doc(db, 'tasks', id), { completed: true });
 };
 
+// NIEUW: Terugzetten van voltooide taak
+window.undoComplete = async (id) => {
+    await updateDoc(doc(db, 'tasks', id), { completed: false });
+};
+
 window.deleteItem = async (id) => {
     const col = activeCategory === 'Notitieblok' ? 'notes' : 'tasks';
     if(confirm("Verwijderen?")) await deleteDoc(doc(db, col, id));
 };
 
 window.toggleCompleted = () => {
-    const cont = document.getElementById('completed-container');
-    cont.classList.toggle('hidden');
+    document.getElementById('completed-container').classList.toggle('hidden');
+    // Pijl omdraaien
+    const arrow = document.getElementById('completed-arrow');
+    arrow.innerText = arrow.innerText === '▼' ? '▲' : '▼';
 };
 
 window.toggleTheme = () => {

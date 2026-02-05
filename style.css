@@ -4,6 +4,7 @@
     --text-color: #1c1c1e;
     --accent: #007aff;
     --border: #e5e5ea;
+    --label-color: #8e8e93;
 }
 
 body.dark-mode {
@@ -30,34 +31,61 @@ body { font-family: -apple-system, sans-serif; background: var(--bg-color); colo
 .nav-pill.special { border: 1.5px solid var(--accent); color: var(--accent); }
 .nav-pill.special.active { color: white; }
 
-/* Invoer */
+/* Invoer Sectie Vernieuwd */
 .input-section { background: var(--bg-card); margin: 0 20px 20px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-#mainInput { width: 100%; border: none; font-size: 17px; background: transparent; color: inherit; outline: none; }
-.options { display: flex; gap: 10px; margin-top: 15px; }
-select { background: var(--bg-color); border: none; padding: 8px; border-radius: 8px; color: inherit; flex: 1; font-weight: 600; }
-#addBtn { background: var(--accent); color: white; border: none; border-radius: 10px; width: 40px; font-weight: bold; }
+#mainInput { width: 100%; border: none; font-size: 17px; background: transparent; color: inherit; outline: none; margin-bottom: 15px;}
+
+.options-grid { display: flex; gap: 10px; align-items: flex-end; }
+.opt-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.opt-group.btn-group { flex: 0 0 50px; } /* Knop is smal */
+
+label { font-size: 11px; font-weight: 700; color: var(--label-color); text-transform: uppercase; letter-spacing: 0.5px; }
+
+select { 
+    width: 100%; background: var(--bg-color); border: none; 
+    padding: 10px; border-radius: 8px; color: inherit; font-weight: 600; 
+    appearance: none; -webkit-appearance: none;
+}
+
+#addBtn { 
+    background: var(--accent); color: white; border: none; 
+    border-radius: 10px; height: 38px; width: 100%; 
+    font-size: 24px; display: flex; align-items: center; justify-content: center; 
+    cursor: pointer;
+}
 
 /* Kaarten */
-.app-container { padding: 0 20px; }
+.app-container { padding: 0 20px 40px 20px; }
 .taak-kaart { 
     background: var(--bg-card); border-radius: 14px; margin-bottom: 12px; 
     overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .prio-1 { border-left: 4px solid #ff3b30; }
-.prio-2 { border-left: 4px solid #ff9500; }
+.prio-2 { border-left: 4px solid #007aff; } /* Normaal is nu blauw */
 .prio-3 { border-left: 4px solid #34c759; }
 
-.kaart-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
-.cat-label { font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; }
-.taak-naam { font-size: 16px; font-weight: 600; }
+/* Voltooide kaart styling */
+.taak-kaart.completed { opacity: 0.6; }
+.taak-kaart.completed .taak-naam { text-decoration: line-through; }
+
+.kaart-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.header-info { flex: 1; }
+.cat-label { font-size: 10px; font-weight: 800; color: #8e8e93; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.taak-naam { font-size: 16px; font-weight: 600; display: block; outline: none; }
 
 .kaart-body { display: none; padding: 15px; border-top: 1px solid var(--border); }
 .taak-kaart.open .kaart-body { display: block; }
+.taak-kaart.open .expand-arrow { transform: rotate(180deg); }
 
-textarea { width: 100%; height: 80px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-family: inherit; resize: none; margin-bottom: 10px; }
+textarea { width: 100%; height: 80px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-family: inherit; resize: none; margin-bottom: 10px; box-sizing: border-box;}
 .actions { display: flex; gap: 10px; }
-.btn-row { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
+.btn-row { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; }
 .delete { background: #ff3b3020; color: #ff3b30; }
+.restore { background: #34c75920; color: #27ae60; }
+
+/* Completed Section */
+.completed-header { display: flex; justify-content: space-between; padding: 15px 0; font-weight: 700; color: var(--label-color); cursor: pointer; margin-top: 30px; }
+.completed-content.hidden { display: none; }
 
 /* FAB */
 .fab-container { position: fixed; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 15px; }
