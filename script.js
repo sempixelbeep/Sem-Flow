@@ -14,22 +14,17 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let cloudData = [];
-const taskCategories = ['algemeen', 'ideeën', 'opschrijven', 'kopen', 'werk', 'privé', 'overige', 'later'];
+const taskCategories = ['Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later'];
 
 window.onload = () => {
-    fillDropdown();
-    startSync();
-};
-
-function fillDropdown() {
     const sel = document.getElementById('catSelect');
-    if (!sel) return;
     taskCategories.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat; opt.innerText = cat;
         sel.appendChild(opt);
     });
-}
+    startSync();
+};
 
 function startSync() {
     const q = query(collection(db, "tasks"), orderBy("timestamp", "desc"));
@@ -41,36 +36,37 @@ function startSync() {
 
 window.render = () => {
     const board = document.getElementById('board-container');
-    const compContainer = document.getElementById('completed-container');
     const searchTerm = (document.getElementById('searchInput')?.value || "").toLowerCase();
-    
     if (!board) return;
     board.innerHTML = '';
-    compContainer.innerHTML = '';
-    let doneCount = 0;
 
-    // Render Kolommen
     taskCategories.forEach(catName => {
         const col = document.createElement('div');
         col.className = 'board-column';
         
-        const tasks = cloudData.filter(t => t.cat === catName && !t.completed);
-        const filtered = tasks.filter(t => (t.text || "").toLowerCase().includes(searchTerm));
+        const catTasks = cloudData.filter(t => t.cat === catName);
+        const openTasks = catTasks.filter(t => !t.completed && t.text.toLowerCase().includes(searchTerm));
+        const doneTasks = catTasks.filter(t => t.completed && t.text.toLowerCase().includes(searchTerm));
 
         col.innerHTML = `
-            <div class="column-header">${catName} <span>${filtered.length}</span></div>
+            <div class="column-header">${catName}</div>
+            <div class="cat-stats">Open: ${openTasks.length} | Klaar: ${doneTasks.length}</div>
             <div class="task-list" data-cat="${catName}" id="list-${catName}"></div>
         `;
         board.appendChild(col);
 
         const listEl = col.querySelector('.task-list');
-        filtered.forEach(item => listEl.appendChild(createTaskCard(item)));
+        // Render eerst open taken, dan voltooide
+        [...openTasks, ...doneTasks].forEach(item => {
+            listEl.appendChild(createTaskCard(item));
+        });
 
-        // Drag & Drop activeren
         new Sortable(listEl, {
             group: 'tasks',
             animation: 150,
-            handle: '.drag-handle',
+            delay: 200, // Fix voor mobiel scrollen
+            delayOnTouchOnly: true,
+            handle: '.taak-kaart',
             onEnd: async (evt) => {
                 const taskId = evt.item.getAttribute('data-id');
                 const newCat = evt.to.getAttribute('data-cat');
@@ -78,13 +74,6 @@ window.render = () => {
             }
         });
     });
-
-    // Render Voltooid
-    cloudData.filter(t => t.completed).forEach(item => {
-        doneCount++;
-        compContainer.appendChild(createTaskCard(item));
-    });
-    document.getElementById('doneCount').innerText = doneCount;
 };
 
 function createTaskCard(item) {
@@ -95,61 +84,71 @@ function createTaskCard(item) {
     const dl = item.deadline ? `🕒 ${new Date(item.deadline).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}` : '';
 
     div.innerHTML = `
+        <span class="material-icons-round edit-icon" onclick="window.editName('${item.id}', event)">edit</span>
         <div class="kaart-header" onclick="window.toggleCard(this)">
-            <div class="drag-handle">⠿</div>
             <div class="header-info">
-                <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+                <div class="taak-naam" id="name-${item.id}">${item.text}</div>
                 ${dl ? `<span class="deadline-label">${dl}</span>` : ''}
             </div>
         </div>
         <div class="kaart-body">
             <div class="body-inner">
-                <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="notitie...">${item.note || ''}</textarea>
+                <textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie...">${item.note || ''}</textarea>
+                
+                <div class="inline-edit-group">
+                    <div class="inline-item">
+                        <span class="inline-label">Prioriteit</span>
+                        <select class="inline-select" onchange="window.saveField('${item.id}', 'prio', this.value)">
+                            <option value="1" ${item.prio == '1' ? 'selected' : ''}>🔥 Hoog</option>
+                            <option value="2" ${item.prio == '2' ? 'selected' : ''}>🔹 Normaal</option>
+                            <option value="3" ${item.prio == '3' ? 'selected' : ''}>🌱 Laag</option>
+                        </select>
+                    </div>
+                    <div class="inline-item">
+                        <span class="inline-label">Deadline</span>
+                        <input type="datetime-local" class="inline-date" value="${item.deadline || ''}" onchange="window.saveField('${item.id}', 'deadline', this.value)">
+                    </div>
+                    <div class="inline-item">
+                        <span class="inline-label">Categorie</span>
+                        <select class="inline-select" onchange="window.saveField('${item.id}', 'cat', this.value)">
+                            ${taskCategories.map(c => `<option value="${c}" ${item.cat === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+
                 <div class="actions">
-                    <button class="btn-row" onclick="window.completeTask('${item.id}', ${item.completed})">
-                        ${item.completed ? '♻️ terug' : '✅ klaar'}
+                    <button class="btn-row" style="background: ${item.completed ? '#eee' : '#27ae6020'}; color: ${item.completed ? '#666' : '#27ae60'}" onclick="window.completeTask('${item.id}', ${item.completed})">
+                        ${item.completed ? '♻️ Heropenen' : '✅ Voltooien'}
                     </button>
-                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ wis</button>
+                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Wissen</button>
                 </div>
             </div>
         </div>`;
     return div;
 }
 
+window.editName = (id, e) => {
+    e.stopPropagation();
+    const current = document.getElementById(`name-${id}`).innerText;
+    const newName = prompt("Wijzig taaknaam:", current);
+    if (newName && newName !== current) window.saveField(id, 'text', newName);
+};
+
 window.addItem = async () => {
     const input = document.getElementById('mainInput');
     if (!input.value.trim()) return;
-
     await addDoc(collection(db, "tasks"), {
         text: input.value,
         cat: document.getElementById('catSelect').value,
         prio: document.getElementById('prioSelect').value,
         deadline: document.getElementById('dateInput').value || null,
-        completed: false,
-        note: "",
-        timestamp: Date.now()
+        completed: false, note: "", timestamp: Date.now()
     });
     input.value = '';
 };
 
-window.saveField = async (id, field, val) => {
-    await updateDoc(doc(db, "tasks", id), { [field]: val });
-};
-
-window.completeTask = async (id, currentState) => {
-    await updateDoc(doc(db, "tasks", id), { completed: !currentState });
-};
-
-window.deleteItem = async (id) => {
-    if(confirm("Wis taak?")) await deleteDoc(doc(db, "tasks", id));
-};
-
+window.saveField = async (id, field, val) => { await updateDoc(doc(db, "tasks", id), { [field]: val }); };
+window.completeTask = async (id, state) => { await updateDoc(doc(db, "tasks", id), { completed: !state }); };
+window.deleteItem = async (id) => { if(confirm("Taak wissen?")) await deleteDoc(doc(db, "tasks", id)); };
 window.toggleCard = (el) => el.parentElement.classList.toggle('open');
-
-window.toggleCompleted = () => {
-    const cont = document.getElementById('completed-container');
-    cont.classList.toggle('hidden');
-    document.getElementById('completed-arrow').style.transform = cont.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-};
-
 window.toggleTheme = () => document.body.classList.toggle('dark-mode');
