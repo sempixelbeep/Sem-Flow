@@ -30,12 +30,17 @@ window.onload = () => {
 function startSync() {
     onSnapshot(query(collection(db, "tasks"), orderBy("timestamp", "desc")), (snap) => {
         cloudData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (!document.activeElement.hasAttribute('contenteditable')) window.render();
+        // Voorkom re-render als de gebruiker een input veld focus heeft
+        const active = document.activeElement;
+        if (!active.hasAttribute('contenteditable') && active.tagName !== 'TEXTAREA' && active.tagName !== 'INPUT' && active.tagName !== 'SELECT') {
+            window.render();
+        }
     });
 }
 
 window.render = () => {
     const container = document.getElementById('board-container');
+    if(!container) return;
     container.innerHTML = '';
 
     categories.forEach(cat => {
@@ -49,7 +54,9 @@ window.render = () => {
         tasks.forEach(t => list.appendChild(createCard(t)));
 
         new Sortable(list, { group: 'tasks', animation: 200, onEnd: async (e) => {
-            await updateDoc(doc(db, "tasks", e.item.dataset.id), { cat: e.to.dataset.cat });
+            const taskId = e.item.dataset.id;
+            const newCat = e.to.dataset.cat;
+            await updateDoc(doc(db, "tasks", taskId), { cat: newCat });
         }});
     });
 };
@@ -59,20 +66,24 @@ function createCard(t) {
     div.className = `taak-kaart prio-${t.prio || 3} ${t.completed ? 'completed' : ''}`;
     div.dataset.id = t.id;
 
-    // Voeg Particles toe
-    const symbols = { '1': '🔥', '2': '🔸', '3': '💎', '4': '🟢' };
-    const amount = t.prio == '1' ? 8 : 3;
-    for(let i=0; i<amount; i++) {
+    // Particle Configs
+    const configs = {
+        '1': { s: ['🔥', '💨', '🌋', '🔥'], n: 12 }, // Extreem
+        '2': { s: ['🔥', '✨'], n: 6 },              // Hoog
+        '3': { s: ['💎', '🔹'], n: 5 },              // Normaal
+        '4': { s: ['🟢', '🌿'], n: 3 }               // Laag
+    };
+    const conf = configs[t.prio] || configs['3'];
+    for(let i=0; i < conf.n; i++) {
         const p = document.createElement('span');
         p.className = 'particle';
-        p.innerText = symbols[t.prio] || '✨';
-        if(t.prio == '1' && i % 2 == 0) p.innerText = '💨'; // Rook voor extreem
+        p.innerText = conf.s[Math.floor(Math.random() * conf.s.length)];
         p.style.left = Math.random() * 80 + 10 + '%';
-        p.style.animationDelay = Math.random() * 2 + 's';
+        p.style.animationDelay = Math.random() * 3 + 's';
         div.appendChild(p);
     }
 
-    const dl = t.deadline ? `<div class="deadline-badge">🕒 ${new Date(t.deadline).toLocaleString()}</div>` : '';
+    const dl = t.deadline ? `<div class="deadline-badge">🕒 ${new Date(t.deadline).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : '';
 
     div.innerHTML += `
         <div class="kaart-header" onclick="window.toggleCard(this)">
@@ -81,7 +92,7 @@ function createCard(t) {
         </div>
         <div class="kaart-body">
             <div class="body-inner">
-                <textarea onblur="window.save('${t.id}', 'note', this.value)" placeholder="Notities...">${t.note || ''}</textarea>
+                <textarea onblur="window.save('${t.id}', 'note', this.value)" placeholder="Notitie toevoegen...">${t.note || ''}</textarea>
                 
                 <div class="edit-grid">
                     <div class="edit-item"><label>Categorie</label>
@@ -101,13 +112,15 @@ function createCard(t) {
                         <input type="datetime-local" class="inline-input" value="${t.deadline || ''}" onchange="window.save('${t.id}', 'deadline', this.value)">
                     </div>
                     <div class="edit-item"><label>Status</label>
-                        <button class="btn-task btn-complete" onclick="window.complete('${t.id}', ${t.completed})">${t.completed?'Heropen':'Klaar'}</button>
+                        <button class="btn-task btn-complete" onclick="window.complete('${t.id}', ${t.completed})">${t.completed?'Openen':'Klaar'}</button>
                     </div>
                 </div>
                 
                 <div class="actions">
-                    <button class="btn-task btn-remind" onclick="alert('Herinnering ingesteld!')">🔔 Herinnering</button>
-                    <button class="btn-task btn-delete" onclick="window.del('${t.id}')">🗑️ Wissen</button>
+                    <div class="btn-row">
+                        <button class="btn-task btn-remind" onclick="alert('Herinnering ingesteld!')">🔔 Herinnering</button>
+                        <button class="btn-task btn-delete" onclick="window.del('${t.id}')">🗑️ Wissen</button>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -117,16 +130,17 @@ function createCard(t) {
 window.toggleCard = (el) => el.parentElement.classList.toggle('open');
 window.save = async (id, f, v) => await updateDoc(doc(db, "tasks", id), { [f]: v });
 window.complete = async (id, s) => await updateDoc(doc(db, "tasks", id), { completed: !s });
-window.del = async (id) => confirm("Wissen?") && await deleteDoc(doc(db, "tasks", id));
+window.del = async (id) => confirm("Taak verwijderen?") && await deleteDoc(doc(db, "tasks", id));
 window.addItem = async () => {
-    const val = document.getElementById('mainInput').value;
-    if(!val) return;
+    const input = document.getElementById('mainInput');
+    if(!input.value.trim()) return;
     await addDoc(collection(db, "tasks"), {
-        text: val, cat: document.getElementById('catSelect').value,
+        text: input.value, 
+        cat: document.getElementById('catSelect').value,
         prio: document.getElementById('prioSelect').value,
         deadline: document.getElementById('dateInput').value || null,
-        completed: false, timestamp: Date.now()
+        completed: false, note: "", timestamp: Date.now()
     });
-    document.getElementById('mainInput').value = '';
+    input.value = '';
 };
 window.toggleTheme = () => document.body.classList.toggle('dark-mode');
