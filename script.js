@@ -13,17 +13,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const categories = ['Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later', 'Notities'];
 let cloudData = [];
-const taskCategories = ['Algemeen', 'Ideeën', 'Opschrijven', 'Kopen', 'Werk', 'Privé', 'Overige', 'Later', 'Notities'];
 
 window.onload = () => {
-    const sel = document.getElementById('catSelect');
-    taskCategories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat; opt.innerText = cat;
-        sel.appendChild(opt);
-    });
-
+    const catSelect = document.getElementById('catSelect');
+    categories.forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
+    
     document.getElementById('mainInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') window.addItem();
     });
@@ -32,112 +28,105 @@ window.onload = () => {
 };
 
 function startSync() {
-    const q = query(collection(db, "tasks"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
-        cloudData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (!document.activeElement.hasAttribute('contenteditable')) {
-            window.render();
-        }
+    onSnapshot(query(collection(db, "tasks"), orderBy("timestamp", "desc")), (snap) => {
+        cloudData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!document.activeElement.hasAttribute('contenteditable')) window.render();
     });
 }
 
 window.render = () => {
-    const board = document.getElementById('board-container');
-    const searchTerm = (document.getElementById('searchInput')?.value || "").toLowerCase();
-    if (!board) return;
-    board.innerHTML = '';
+    const container = document.getElementById('board-container');
+    container.innerHTML = '';
 
-    taskCategories.forEach(catName => {
+    categories.forEach(cat => {
+        const tasks = cloudData.filter(t => t.cat === cat);
         const col = document.createElement('div');
         col.className = 'board-column';
-        const catTasks = cloudData.filter(t => t.cat === catName);
-        const openTasks = catTasks.filter(t => !t.completed && t.text.toLowerCase().includes(searchTerm));
-        const doneTasks = catTasks.filter(t => t.completed && t.text.toLowerCase().includes(searchTerm));
+        col.innerHTML = `<h3>${cat}</h3><div class="task-list" id="list-${cat}" data-cat="${cat}"></div>`;
+        container.appendChild(col);
 
-        const percent = catTasks.length === 0 ? 0 : Math.round((catTasks.filter(t => t.completed).length / catTasks.length) * 100);
+        const list = col.querySelector('.task-list');
+        tasks.forEach(t => list.appendChild(createCard(t)));
 
-        col.innerHTML = `
-            <div class="column-header">${catName}</div>
-            <div class="cat-stats"><span>${openTasks.length} items</span><span>${percent}%</span></div>
-            <div class="progress-container"><div class="progress-fill" style="width: ${percent}%"></div></div>
-            <div class="task-list" data-cat="${catName}" id="list-${catName}"></div>
-        `;
-        board.appendChild(col);
-
-        const listEl = col.querySelector('.task-list');
-        openTasks.forEach(item => listEl.appendChild(createTaskCard(item)));
-
-        if (doneTasks.length > 0) {
-            const sep = document.createElement('div'); sep.className = 'done-separator';
-            const txt = document.createElement('div'); txt.className = 'done-text'; txt.innerText = 'Voltooid';
-            listEl.appendChild(sep); listEl.appendChild(txt);
-            doneTasks.forEach(item => listEl.appendChild(createTaskCard(item)));
-        }
-
-        new Sortable(listEl, {
-            group: 'tasks', animation: 200, delay: 250, delayOnTouchOnly: true,
-            onEnd: async (evt) => {
-                const taskId = evt.item.getAttribute('data-id');
-                const newCat = evt.to.getAttribute('data-cat');
-                await updateDoc(doc(db, "tasks", taskId), { cat: newCat });
-            }
-        });
+        new Sortable(list, { group: 'tasks', animation: 200, onEnd: async (e) => {
+            await updateDoc(doc(db, "tasks", e.item.dataset.id), { cat: e.to.dataset.cat });
+        }});
     });
 };
 
-function createTaskCard(item) {
+function createCard(t) {
     const div = document.createElement('div');
-    const isNote = item.cat === 'Notities';
-    div.setAttribute('data-id', item.id);
-    div.className = `taak-kaart prio-${item.prio || 2} ${item.completed ? 'completed' : ''} ${isNote ? 'cat-notities' : ''}`;
-    
-    const dl = item.deadline ? `🕒 ${new Date(item.deadline).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}` : '';
+    div.className = `taak-kaart prio-${t.prio || 3} ${t.completed ? 'completed' : ''}`;
+    div.dataset.id = t.id;
 
-    div.innerHTML = `
+    // Voeg Particles toe
+    const symbols = { '1': '🔥', '2': '🔸', '3': '💎', '4': '🟢' };
+    const amount = t.prio == '1' ? 8 : 3;
+    for(let i=0; i<amount; i++) {
+        const p = document.createElement('span');
+        p.className = 'particle';
+        p.innerText = symbols[t.prio] || '✨';
+        if(t.prio == '1' && i % 2 == 0) p.innerText = '💨'; // Rook voor extreem
+        p.style.left = Math.random() * 80 + 10 + '%';
+        p.style.animationDelay = Math.random() * 2 + 's';
+        div.appendChild(p);
+    }
+
+    const dl = t.deadline ? `<div class="deadline-badge">🕒 ${new Date(t.deadline).toLocaleString()}</div>` : '';
+
+    div.innerHTML += `
         <div class="kaart-header" onclick="window.toggleCard(this)">
-            <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
-            ${dl ? `<span class="deadline-badge">${dl}</span>` : ''}
+            <div class="taak-naam" contenteditable="true" onblur="window.save('${t.id}', 'text', this.innerText)" onclick="event.stopPropagation()">${t.text}</div>
+            ${dl}
         </div>
         <div class="kaart-body">
             <div class="body-inner">
-                ${isNote ? 
-                    `<div class="rich-note-editor" contenteditable="true" onblur="window.saveField('${item.id}', 'note', this.innerHTML)">${item.note || ''}</div>` :
-                    `<textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie...">${item.note || ''}</textarea>`
-                }
-                <div class="inline-edit-group" style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:10px;">
-                    <select onchange="window.saveField('${item.id}', 'cat', this.value)" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-color); border:none; color:inherit;">
-                        ${taskCategories.map(c => `<option value="${c}" ${item.cat === c ? 'selected' : ''}>${c}</option>`).join('')}
-                    </select>
-                    ${!isNote ? `
-                        <select onchange="window.saveField('${item.id}', 'prio', this.value)" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-color); border:none; color:inherit;">
-                            <option value="1" ${item.prio == '1' ? 'selected' : ''}>🔥 Hoog</option>
-                            <option value="2" ${item.prio == '2' ? 'selected' : ''}>🔹 Normaal</option>
-                            <option value="3" ${item.prio == '3' ? 'selected' : ''}>🌱 Laag</option>
+                <textarea onblur="window.save('${t.id}', 'note', this.value)" placeholder="Notities...">${t.note || ''}</textarea>
+                
+                <div class="edit-grid">
+                    <div class="edit-item"><label>Categorie</label>
+                        <select onchange="window.save('${t.id}', 'cat', this.value)">
+                            ${categories.map(c => `<option value="${c}" ${t.cat==c?'selected':''}>${c}</option>`).join('')}
                         </select>
-                    ` : ''}
+                    </div>
+                    <div class="edit-item"><label>Prioriteit</label>
+                        <select onchange="window.save('${t.id}', 'prio', this.value)">
+                            <option value="1" ${t.prio=='1'?'selected':''}>💥 Extreem</option>
+                            <option value="2" ${t.prio=='2'?'selected':''}>🔥 Hoog</option>
+                            <option value="3" ${t.prio=='3'?'selected':''}>🔹 Normaal</option>
+                            <option value="4" ${t.prio=='4'?'selected':''}>🌱 Laag</option>
+                        </select>
+                    </div>
+                    <div class="edit-item"><label>Deadline</label>
+                        <input type="datetime-local" class="inline-input" value="${t.deadline || ''}" onchange="window.save('${t.id}', 'deadline', this.value)">
+                    </div>
+                    <div class="edit-item"><label>Status</label>
+                        <button class="btn-task btn-complete" onclick="window.complete('${t.id}', ${t.completed})">${t.completed?'Heropen':'Klaar'}</button>
+                    </div>
                 </div>
+                
                 <div class="actions">
-                    <button class="btn-row complete" onclick="window.completeTask('${item.id}', ${item.completed})">${item.completed ? 'Heropenen' : 'Voltooien'}</button>
-                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">Wissen</button>
+                    <button class="btn-task btn-remind" onclick="alert('Herinnering ingesteld!')">🔔 Herinnering</button>
+                    <button class="btn-task btn-delete" onclick="window.del('${t.id}')">🗑️ Wissen</button>
                 </div>
             </div>
         </div>`;
     return div;
 }
 
-window.toggleCard = (el) => { if (document.activeElement.hasAttribute('contenteditable')) return; el.parentElement.classList.toggle('open'); };
-window.saveField = async (id, f, v) => await updateDoc(doc(db, "tasks", id), { [f]: v });
-window.completeTask = async (id, s) => await updateDoc(doc(db, "tasks", id), { completed: !s });
-window.deleteItem = async (id) => { if(confirm("Wissen?")) await deleteDoc(doc(db, "tasks", id)); };
+window.toggleCard = (el) => el.parentElement.classList.toggle('open');
+window.save = async (id, f, v) => await updateDoc(doc(db, "tasks", id), { [f]: v });
+window.complete = async (id, s) => await updateDoc(doc(db, "tasks", id), { completed: !s });
+window.del = async (id) => confirm("Wissen?") && await deleteDoc(doc(db, "tasks", id));
 window.addItem = async () => {
-    const i = document.getElementById('mainInput');
-    if (!i.value.trim()) return;
+    const val = document.getElementById('mainInput').value;
+    if(!val) return;
     await addDoc(collection(db, "tasks"), {
-        text: i.value, cat: document.getElementById('catSelect').value,
+        text: val, cat: document.getElementById('catSelect').value,
         prio: document.getElementById('prioSelect').value,
         deadline: document.getElementById('dateInput').value || null,
-        completed: false, note: "", timestamp: Date.now()
+        completed: false, timestamp: Date.now()
     });
-    i.value = '';
+    document.getElementById('mainInput').value = '';
 };
 window.toggleTheme = () => document.body.classList.toggle('dark-mode');
