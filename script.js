@@ -18,7 +18,11 @@ let cloudData = [];
 
 window.onload = () => {
     const catSelect = document.getElementById('catSelect');
-    categories.forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
+    categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.innerText = c;
+        catSelect.appendChild(opt);
+    });
     
     document.getElementById('mainInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') window.addItem();
@@ -30,9 +34,9 @@ window.onload = () => {
 function startSync() {
     onSnapshot(query(collection(db, "tasks"), orderBy("timestamp", "desc")), (snap) => {
         cloudData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Voorkom re-render als de gebruiker een input veld focus heeft
         const active = document.activeElement;
-        if (!active.hasAttribute('contenteditable') && active.tagName !== 'TEXTAREA' && active.tagName !== 'INPUT' && active.tagName !== 'SELECT') {
+        // Check of de gebruiker niet aan het typen is
+        if (!active.hasAttribute('contenteditable') && active.tagName !== 'TEXTAREA' && active.tagName !== 'INPUT') {
             window.render();
         }
     });
@@ -54,9 +58,7 @@ window.render = () => {
         tasks.forEach(t => list.appendChild(createCard(t)));
 
         new Sortable(list, { group: 'tasks', animation: 200, onEnd: async (e) => {
-            const taskId = e.item.dataset.id;
-            const newCat = e.to.dataset.cat;
-            await updateDoc(doc(db, "tasks", taskId), { cat: newCat });
+            await updateDoc(doc(db, "tasks", e.item.dataset.id), { cat: e.to.dataset.cat });
         }});
     });
 };
@@ -66,12 +68,11 @@ function createCard(t) {
     div.className = `taak-kaart prio-${t.prio || 3} ${t.completed ? 'completed' : ''}`;
     div.dataset.id = t.id;
 
-    // Particle Configs
     const configs = {
-        '1': { s: ['🔥', '💨', '🌋', '🔥'], n: 12 }, // Extreem
-        '2': { s: ['🔥', '✨'], n: 6 },              // Hoog
-        '3': { s: ['💎', '🔹'], n: 5 },              // Normaal
-        '4': { s: ['🟢', '🌿'], n: 3 }               // Laag
+        '1': { s: ['🔥', '💨', '🌋'], n: 12 },
+        '2': { s: ['🔥', '✨'], n: 6 },
+        '3': { s: ['💎', '🔹'], n: 5 },
+        '4': { s: ['🟢', '🌿'], n: 3 }
     };
     const conf = configs[t.prio] || configs['3'];
     for(let i=0; i < conf.n; i++) {
@@ -92,8 +93,7 @@ function createCard(t) {
         </div>
         <div class="kaart-body">
             <div class="body-inner">
-                <textarea onblur="window.save('${t.id}', 'note', this.value)" placeholder="Notitie toevoegen...">${t.note || ''}</textarea>
-                
+                <textarea onblur="window.save('${t.id}', 'note', this.value)" placeholder="Notitie...">${t.note || ''}</textarea>
                 <div class="edit-grid">
                     <div class="edit-item"><label>Categorie</label>
                         <select onchange="window.save('${t.id}', 'cat', this.value)">
@@ -115,10 +115,9 @@ function createCard(t) {
                         <button class="btn-task btn-complete" onclick="window.complete('${t.id}', ${t.completed})">${t.completed?'Openen':'Klaar'}</button>
                     </div>
                 </div>
-                
                 <div class="actions">
                     <div class="btn-row">
-                        <button class="btn-task btn-remind" onclick="alert('Herinnering ingesteld!')">🔔 Herinnering</button>
+                        <button class="btn-task btn-remind" onclick="alert('Herinnering!')">🔔 Herinnering</button>
                         <button class="btn-task btn-delete" onclick="window.del('${t.id}')">🗑️ Wissen</button>
                     </div>
                 </div>
@@ -130,13 +129,12 @@ function createCard(t) {
 window.toggleCard = (el) => el.parentElement.classList.toggle('open');
 window.save = async (id, f, v) => await updateDoc(doc(db, "tasks", id), { [f]: v });
 window.complete = async (id, s) => await updateDoc(doc(db, "tasks", id), { completed: !s });
-window.del = async (id) => confirm("Taak verwijderen?") && await deleteDoc(doc(db, "tasks", id));
+window.del = async (id) => confirm("Wissen?") && await deleteDoc(doc(db, "tasks", id));
 window.addItem = async () => {
     const input = document.getElementById('mainInput');
     if(!input.value.trim()) return;
     await addDoc(collection(db, "tasks"), {
-        text: input.value, 
-        cat: document.getElementById('catSelect').value,
+        text: input.value, cat: document.getElementById('catSelect').value,
         prio: document.getElementById('prioSelect').value,
         deadline: document.getElementById('dateInput').value || null,
         completed: false, note: "", timestamp: Date.now()

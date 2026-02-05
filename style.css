@@ -21,7 +21,7 @@ body.dark-mode {
 body { 
     background-color: var(--bg-color); 
     color: var(--text-color);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     transition: background-color var(--transition-slow);
     margin: 0; overflow-x: hidden; min-height: 100vh;
 }
@@ -40,7 +40,7 @@ body {
 .prio-3 { border-left: 8px solid var(--prio-3); box-shadow: 0 4px 15px rgba(0, 122, 255, 0.2); }
 .prio-4 { border-left: 8px solid var(--prio-4); box-shadow: 0 4px 15px rgba(52, 199, 89, 0.2); }
 
-/* Hover Intensiteit */
+/* Hover Intensiteit (Transition effect) */
 .taak-kaart:hover.prio-1 { box-shadow: 0 15px 40px rgba(255, 59, 48, 0.8); }
 .taak-kaart:hover.prio-2 { box-shadow: 0 12px 30px rgba(255, 149, 0, 0.7); }
 .taak-kaart:hover.prio-3 { box-shadow: 0 10px 25px rgba(0, 122, 255, 0.6); }
@@ -54,7 +54,6 @@ body {
     100% { transform: translateY(-70px) scale(1.3); opacity: 0; }
 }
 
-/* --- CARD CONTENT & CENTERING --- */
 .kaart-header { padding: 20px; text-align: center; }
 .taak-naam { font-size: 17px; font-weight: 700; margin-bottom: 5px; outline: none; }
 .deadline-badge { font-size: 11px; font-weight: 800; color: var(--prio-1); text-transform: uppercase; }
@@ -70,7 +69,6 @@ textarea {
     text-align: center; outline: none; margin-bottom: 15px; resize: none;
 }
 
-/* Grid binnen de kaart */
 .edit-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 .edit-item { display: flex; flex-direction: column; gap: 4px; text-align: left; }
 .edit-item label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--label-color); opacity: 0.7; }
@@ -83,14 +81,11 @@ select, .inline-input { padding: 10px; border-radius: 10px; border: none; backgr
 .btn-remind { background: #5856d6; color: white; }
 .btn-delete { background: rgba(255, 59, 48, 0.1); color: var(--prio-1); }
 
-/* Board */
 .board-container { display: flex; gap: 30px; padding: 20px 40px; overflow-x: auto; align-items: flex-start; }
 .board-column { width: 320px; flex-shrink: 0; }
-.board-column h3 { font-size: 20px; font-weight: 800; margin-bottom: 15px; padding-left: 10px; }
+.board-column h3 { font-size: 20px; font-weight: 800; margin-bottom: 15px; }
 
-/* Input Sectie */
 .input-section { max-width: 650px; margin: 40px auto; padding: 25px; background: var(--bg-card); border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
 #mainInput { width: 100%; border: none; font-size: 20px; font-weight: 600; outline: none; background: transparent; color: inherit; margin-bottom: 20px; }
 .add-controls { display: flex; gap: 12px; align-items: flex-end; }
 .add-btn-main { background: var(--accent); color: white; border: none; width: 50px; height: 50px; border-radius: 15px; font-size: 28px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.add-btn-main:hover { transform: scale(1.05); filter: brightness(1.1); }
