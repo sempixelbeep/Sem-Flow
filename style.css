@@ -2,10 +2,15 @@
     --bg-color: #C1D2CF;
     --bg-card: #ffffff;
     --text-color: #1c1c1e;
-    --accent: #27ae60; /* Groen */
+    --accent: #27ae60;
     --border: rgba(0,0,0,0.06);
     --label-color: #5a6b68;
     --shadow-deep: 0 10px 30px rgba(0,0,0,0.12);
+    --transition-slow: 7s ease-in-out;
+    /* Prio Kleuren */
+    --prio-1: #ff3b30;
+    --prio-2: #007aff;
+    --prio-3: #34c759;
 }
 
 body.dark-mode {
@@ -16,79 +21,107 @@ body.dark-mode {
     --label-color: #8e8e93;
 }
 
+body, .input-section, #searchInput, .board-column, select, input { 
+    transition: background-color var(--transition-slow), color var(--transition-slow); 
+}
+
 body { 
     background-color: var(--bg-color); 
     font-family: -apple-system, sans-serif; 
     color: var(--text-color); 
     margin: 0; 
-    min-height: 200vh; /* Extra lang */
-    transition: background 0.3s;
+    min-height: 200vh;
 }
+
+/* ... (Input en Search stijlen blijven gelijk aan v0.3.5) ... */
 
 .top-bar { padding: 30px 40px 10px; display: flex; justify-content: space-between; align-items: center; }
 .app-title { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
 
-/* Zoeken */
 .search-container { margin: 0 auto 30px; width: 90%; max-width: 600px; position: relative; }
 #searchInput { 
-    width: 100%; padding: 15px 15px 15px 45px; border-radius: 15px; border: none; 
+    width: 100%; padding: 15px 15px 15px 45px; border-radius: 18px; border: none; 
     background: var(--bg-card); color: var(--text-color); font-size: 16px; outline: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--label-color); }
 
-/* Input Kaart */
 .input-section { 
     background: var(--bg-card); margin: 0 auto 50px; padding: 25px; 
-    border-radius: 20px; width: 90%; max-width: 600px;
+    border-radius: 24px; width: 90%; max-width: 600px;
     box-shadow: var(--shadow-deep);
 }
-#mainInput { width: 100%; border: none; font-size: 20px; background: transparent; color: inherit; outline: none; margin-bottom: 20px; font-weight: 500; }
-.options-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-.opt-group { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 5px; }
-label { font-size: 11px; font-weight: 800; color: var(--label-color); text-transform: uppercase; letter-spacing: 0.5px; }
-select, #dateInput { background: var(--bg-color); border: none; padding: 10px; border-radius: 10px; color: inherit; font-size: 13px; outline: none; }
-#addBtn { background: var(--accent); color: white; border: none; border-radius: 12px; height: 42px; cursor: pointer; font-size: 24px; font-weight: bold; transition: opacity 0.2s; }
-#addBtn:hover { opacity: 0.8; }
+#mainInput { width: 100%; border: none; font-size: 20px; background: transparent; color: inherit; outline: none; margin-bottom: 20px; font-weight: 600; }
+.options-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.opt-group { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 6px; }
+label { font-size: 10px; font-weight: 800; color: var(--label-color); text-transform: uppercase; }
+select, #dateInput { background: var(--bg-color); border: none; padding: 12px; border-radius: 12px; color: inherit; font-size: 13px; outline: none; }
+#addBtn { background: var(--accent); color: white; border: none; border-radius: 14px; height: 46px; cursor: pointer; font-size: 26px; font-weight: bold; }
 
-/* Board */
-.board-wrapper { overflow-x: auto; display: flex; padding: 0 40px 100px; -webkit-overflow-scrolling: touch; }
-.board-container { display: flex; gap: 50px; } /* Meer scheiding */
+.board-wrapper { overflow-x: auto; display: flex; padding: 0 40px 100px; }
+.board-container { display: flex; gap: 50px; }
+.board-column { width: 330px; flex-shrink: 0; }
+.column-header { font-size: 19px; font-weight: 800; padding: 10px 0 5px; color: var(--text-color); }
 
-.board-column { width: 320px; flex-shrink: 0; }
-.column-header { font-size: 18px; font-weight: 800; padding: 10px 0; color: var(--text-color); }
-.cat-stats { font-size: 12px; color: var(--label-color); margin-bottom: 15px; font-weight: 500; }
+/* Progressiebalk */
+.progress-container { width: 100%; height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-bottom: 15px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+.cat-stats { font-size: 11px; color: var(--label-color); margin-bottom: 8px; font-weight: 600; display: flex; justify-content: space-between; }
 
-.task-list { 
-    min-height: 200px; border-radius: 24px; padding: 15px; 
-    background: rgba(255,255,255,0.25); box-shadow: var(--shadow-deep);
+.task-list { min-height: 250px; border-radius: 28px; padding: 18px; background: rgba(255,255,255,0.2); box-shadow: var(--shadow-deep); }
+
+/* Taak Kaarten met GLOW & FIRE */
+.taak-kaart { 
+    background: var(--bg-card); border-radius: 20px; margin-bottom: 18px; position: relative; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Taak Kaarten */
-.taak-kaart { background: var(--bg-card); border-radius: 18px; margin-bottom: 15px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.04); transition: transform 0.2s; }
-.prio-1 { border-left: 6px solid #ff3b30; }
-.prio-2 { border-left: 6px solid #007aff; }
-.prio-3 { border-left: 6px solid #34c759; }
+/* Glow effecten per prioriteit */
+.prio-1 { 
+    border-left: 7px solid var(--prio-1); 
+    box-shadow: 0 4px 15px rgba(255, 59, 48, 0.2);
+    animation: fire-glow 3s infinite alternate; 
+}
+.prio-2 { 
+    border-left: 7px solid var(--prio-2); 
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.15);
+}
+.prio-3 { 
+    border-left: 7px solid var(--prio-3); 
+    box-shadow: 0 4px 15px rgba(52, 199, 89, 0.1);
+}
 
-.kaart-header { padding: 16px; display: flex; align-items: center; cursor: pointer; }
-.taak-naam { font-size: 16px; font-weight: 600; flex: 1; padding-right: 30px; }
-.edit-icon { position: absolute; right: 12px; top: 16px; font-size: 18px; opacity: 0.3; cursor: pointer; }
+/* Fire Animation voor Prio 1 */
+@keyframes fire-glow {
+    0% { box-shadow: 0 4px 15px rgba(255, 59, 48, 0.2), 0 0 5px rgba(255, 59, 48, 0.1); }
+    50% { box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3), 0 0 12px rgba(255, 59, 48, 0.2); }
+    100% { box-shadow: 0 4px 18px rgba(255, 59, 48, 0.25), 0 0 8px rgba(255, 59, 48, 0.15); }
+}
 
-.kaart-body { display: grid; grid-template-rows: 0fr; transition: 0.3s ease-out; overflow: hidden; }
+.kaart-header { padding: 18px; display: flex; align-items: center; cursor: pointer; justify-content: center; text-align: center; }
+.taak-naam { font-size: 16px; font-weight: 700; flex: 1; outline: none; }
+
+.kaart-body { display: grid; grid-template-rows: 0fr; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
 .taak-kaart.open .kaart-body { grid-template-rows: 1fr; border-top: 1px solid var(--border); }
-.body-inner { padding: 0 16px; }
-.taak-kaart.open .body-inner { padding: 16px; }
+.body-inner { padding: 0 18px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.taak-kaart.open .body-inner { padding: 20px 18px; }
 
-textarea { width: 100%; height: 70px; background: var(--bg-color); border: none; border-radius: 10px; padding: 10px; color: inherit; font-size: 14px; resize: none; outline: none; margin: 10px 0; }
+textarea, .rich-note-editor { 
+    width: 100%; max-width: 270px; height: 85px; background: var(--bg-color); border: none; 
+    border-radius: 15px; padding: 14px; color: inherit; font-size: 14px; resize: none; 
+    outline: none; margin: 10px auto; text-align: center; 
+}
+.rich-note-editor { text-align: left; height: auto; min-height: 100px; white-space: pre-wrap; }
+.taak-kaart.cat-notities { background: #fffdf0; border-left: 7px solid #f1c40f; }
 
-/* Inline Edit Group */
-.inline-edit-group { display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
-.inline-item { display: flex; flex-direction: column; gap: 4px; }
-.inline-label { font-size: 10px; font-weight: 800; color: var(--label-color); text-transform: uppercase; }
+.actions { display: flex; gap: 10px; margin-top: 20px; width: 100%; max-width: 270px; }
+.btn-row { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-row.complete { background: var(--accent); color: white; }
+.btn-row.delete { color: #ff3b30; background: rgba(255, 59, 48, 0.1); }
 
-.actions { display: flex; gap: 8px; margin-top: 15px; }
-.btn-row { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; }
-.delete { color: #ff3b30; background: #ff3b3010; }
+.done-separator { width: 80%; height: 1px; background: var(--label-color); opacity: 0.2; margin: 40px auto 5px; }
+.done-text { font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--label-color); text-align: center; margin-bottom: 20px; letter-spacing: 2px; }
 
-.fab-container { position: fixed; bottom: 30px; right: 30px; }
-.fab-btn { width: 50px; height: 50px; border-radius: 25px; border: none; background: var(--bg-card); color: var(--text-color); box-shadow: var(--shadow-deep); cursor: pointer; }
+.taak-kaart.completed { opacity: 0.5; filter: grayscale(0.5); box-shadow: none !important; animation: none !important; }
+
+.fab-container { position: fixed; bottom: 35px; right: 35px; z-index: 100; }
+.fab-btn { width: 56px; height: 56px; border-radius: 28px; border: none; background: var(--bg-card); color: var(--text-color); box-shadow: var(--shadow-deep); cursor: pointer; display: flex; align-items: center; justify-content: center; }
