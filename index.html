@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sem Flow v0.2.8</title>
+    <title>Sem Flow v0.3.0 - Board View</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
-    <div id="fireworks-container"></div>
-    
     <div class="top-bar">
         <div class="app-title">Sem Flow</div>
         <div class="flow-points">💎 <span id="pointsDisplay">0</span></div>
@@ -20,14 +19,9 @@
         <span class="material-icons-round search-icon">search</span>
     </div>
 
-    <div class="category-scroll-container">
-        <div id="categoryNav" class="category-nav"></div>
-    </div>
-
     <div class="app-container">
         <div class="input-section">
             <input type="text" id="mainInput" placeholder="wat moet er gebeuren?" autofocus>
-            
             <div class="options-grid">
                 <div class="opt-group">
                     <label>categorie</label>
@@ -38,7 +32,7 @@
                     <input type="datetime-local" id="dateInput">
                 </div>
                 <div class="opt-group">
-                    <label>prioriteit</label>
+                    <label>prio</label>
                     <select id="prioSelect">
                         <option value="1">🔥 hoog</option>
                         <option value="2" selected>🔹 normaal</option>
@@ -52,10 +46,10 @@
             </div>
         </div>
 
-        <div class="section-header">
-            resterende taken (<span id="openCount">0</span>)
+        <div class="board-wrapper">
+            <div id="board-container" class="board-container">
+                </div>
         </div>
-        <div id="list-container"></div>
 
         <div id="completed-section">
             <div class="completed-header" onclick="window.toggleCompleted()">
@@ -67,9 +61,6 @@
     </div>
 
     <div class="fab-container">
-        <button class="fab-btn secondary" onclick="alert('instellingen v0.3')">
-            <span class="material-icons-round">settings</span>
-        </button>
         <button class="fab-btn primary" onclick="window.toggleTheme()">
             <span class="material-icons-round">dark_mode</span>
         </button>
