@@ -50,14 +50,11 @@ window.render = () => {
     taskCategories.forEach(catName => {
         const col = document.createElement('div');
         col.className = 'board-column';
-        
         const catTasks = cloudData.filter(t => t.cat === catName);
         const openTasks = catTasks.filter(t => !t.completed && t.text.toLowerCase().includes(searchTerm));
         const doneTasks = catTasks.filter(t => t.completed && t.text.toLowerCase().includes(searchTerm));
 
-        const total = catTasks.length;
-        const doneCount = catTasks.filter(t => t.completed).length;
-        const percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+        const percent = catTasks.length === 0 ? 0 : Math.round((catTasks.filter(t => t.completed).length / catTasks.length) * 100);
 
         col.innerHTML = `
             <div class="column-header">${catName}</div>
@@ -99,38 +96,29 @@ function createTaskCard(item) {
     div.innerHTML = `
         <div class="kaart-header" onclick="window.toggleCard(this)">
             <div class="taak-naam" contenteditable="true" onclick="event.stopPropagation()" onblur="window.saveField('${item.id}', 'text', this.innerText)">${item.text}</div>
+            ${dl ? `<span class="deadline-badge">${dl}</span>` : ''}
         </div>
         <div class="kaart-body">
             <div class="body-inner">
-                ${dl ? `<span style="font-size:11px; color:#ff3b30; font-weight:800; margin-bottom:10px;">${dl}</span>` : ''}
                 ${isNote ? 
                     `<div class="rich-note-editor" contenteditable="true" onblur="window.saveField('${item.id}', 'note', this.innerHTML)">${item.note || ''}</div>` :
                     `<textarea onblur="window.saveField('${item.id}', 'note', this.value)" placeholder="Notitie...">${item.note || ''}</textarea>`
                 }
-                <div class="inline-edit-group">
+                <div class="inline-edit-group" style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                    <select onchange="window.saveField('${item.id}', 'cat', this.value)" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-color); border:none; color:inherit;">
+                        ${taskCategories.map(c => `<option value="${c}" ${item.cat === c ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
                     ${!isNote ? `
-                    <div class="inline-item">
-                        <span class="inline-label">Prioriteit</span>
-                        <select class="inline-select" onchange="window.saveField('${item.id}', 'prio', this.value)">
+                        <select onchange="window.saveField('${item.id}', 'prio', this.value)" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-color); border:none; color:inherit;">
                             <option value="1" ${item.prio == '1' ? 'selected' : ''}>🔥 Hoog</option>
                             <option value="2" ${item.prio == '2' ? 'selected' : ''}>🔹 Normaal</option>
                             <option value="3" ${item.prio == '3' ? 'selected' : ''}>🌱 Laag</option>
                         </select>
-                    </div>
-                    <div class="inline-item">
-                        <span class="inline-label">Deadline</span>
-                        <input type="datetime-local" class="inline-date" value="${item.deadline || ''}" onchange="window.saveField('${item.id}', 'deadline', this.value)">
-                    </div>` : ''}
-                    <div class="inline-item">
-                        <span class="inline-label">Categorie</span>
-                        <select class="inline-select" onchange="window.saveField('${item.id}', 'cat', this.value)">
-                            ${taskCategories.map(c => `<option value="${c}" ${item.cat === c ? 'selected' : ''}>${c}</option>`).join('')}
-                        </select>
-                    </div>
+                    ` : ''}
                 </div>
                 <div class="actions">
-                    <button class="btn-row complete" onclick="window.completeTask('${item.id}', ${item.completed})">${item.completed ? '♻️ Heropenen' : '✅ Voltooien'}</button>
-                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">🗑️ Wissen</button>
+                    <button class="btn-row complete" onclick="window.completeTask('${item.id}', ${item.completed})">${item.completed ? 'Heropenen' : 'Voltooien'}</button>
+                    <button class="btn-row delete" onclick="window.deleteItem('${item.id}')">Wissen</button>
                 </div>
             </div>
         </div>`;
